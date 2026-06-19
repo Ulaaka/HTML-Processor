@@ -1,4 +1,4 @@
-from hmtl_parser import HTML_Parser
+from html_parser import HTML_Parser
 from html_processor import HTML_Processor
 import os
 

@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import dateutil.parser
 
 class HTML_Parser:
 
@@ -7,6 +8,7 @@ class HTML_Parser:
         self.html_content = self.html_reader()
         self.soup = BeautifulSoup(self.html_content, "lxml")
         self.history_list = self.html_parser()
+
 
     def html_reader(self):
         with open(self.path, "r", encoding="utf-8") as file:
@@ -18,8 +20,8 @@ class HTML_Parser:
 
         general_list = []
         matches = self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp")
-        for i in matches:
-            captured_list = []
+        for  i in matches:
+
             # skip the ads
             if i.find(string=lambda t: t and t.strip().startswith("Details:")):
                 continue
@@ -40,8 +42,9 @@ class HTML_Parser:
             channel_name = matches[1].get_text(strip=True)
 
             # the timestamp
-            timestamp = captured_list.append(list(sub_content.stripped_strings)[-1])
-            general_list.append((video_link, video_name, channel_link, channel_name, timestamp))
+            timestamp = list(sub_content.stripped_strings)[-1].replace("\u202f", " ")
+            timestamp = dateutil.parser.parse(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
+            general_list.append((video_link, video_name, channel_link, channel_name, timestamp))
         return general_list
 
