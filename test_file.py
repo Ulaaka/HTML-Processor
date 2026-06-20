@@ -9,4 +9,4 @@ path = os.path.join("data_folder", "watch-history.html")
 #processor = HTML_Processor(parser.history_list)
 
 query = QueryProcessor()
-print(query.the_most_watched_videos())
+print(query.the_most_repeated_words())
