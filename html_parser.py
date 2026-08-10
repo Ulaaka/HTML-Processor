@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from db_queries import QueryProcessor
 import dateutil.parser
 
 class HTML_Parser:
@@ -17,9 +18,14 @@ class HTML_Parser:
         return html_content
 
     def html_parser(self):
+        query = QueryProcessor()
 
         general_list = []
-        matches = self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp")
+        matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
+
+        for i in range(0, len(matches), 10):
+            section = matches[i:i+5]
+            
         for  i in matches:
 
             # skip the ads
@@ -27,15 +33,14 @@ class HTML_Parser:
                 continue
 
             sub_content = i.find("div", "content-cell mdl-cell mdl-cell--6-col mdl-typography--body-1")
+
             # find the links (should be 2)
             matches = sub_content.find_all("a")
 
-            # skip abnormalities
             if (len(matches)) < 2:
                 continue
 
             # find the link, and title for both video and channel
-
             video_link = matches[0].get("href")
             video_name = matches[0].get_text(strip=True)
             channel_link = matches[1].get("href")
@@ -45,6 +50,12 @@ class HTML_Parser:
             timestamp = list(sub_content.stripped_strings)[-1].replace("\u202f", " ")
             timestamp = dateutil.parser.parse(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
-            general_list.append((video_link, video_name, channel_link, channel_name, timestamp))
-        return general_list
+            if not query.video_authenticator(video_link):
+                continue
 
+            general_list.append((video_link, video_name, channel_link, channel_name, timestamp))
+
+        # add the duration processing here
+        id_list = [video[0][-11:] for video in general_list]
+
+        return general_list
