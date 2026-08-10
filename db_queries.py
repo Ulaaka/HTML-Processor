@@ -125,6 +125,63 @@ class QueryProcessor:
         return type_set
 
 
+
+    def complex_function(self, video_type=None, time=None, lower_range=None, upper_range=None):
+        """
+        Should show the result based on the user's toggles
+
+        video types = Reel, Video, Unavailable
+        time = Morning, Afternoon, Evening, Night
+
+        """
+
+        time_dictionary = {
+            "morning" : [5, 12],
+            "afternoon": [12, 17],
+            "evening": [17, 21],
+            "night": [21, 5]
+        }
+
+        clauses_list = []
+        params_list = []
+
+        video_type_query = "video_type = %s"
+        time_query = "HOUR(time_stamp) BETWEEN %s AND %s"
+        lower_range_query = "time_stamp >= %s"
+        upper_range_query = "time_stamp <= %s"
+
+        if video_type:
+            clauses_list.append(video_type_query)
+            params_list.append(video_type)
+
+        if time:
+            clauses_list.append(time_query)
+            params_list.extend(time_dictionary[time])
+
+        if lower_range:
+            clauses_list.append(lower_range_query)
+            params_list.append(lower_range)
+
+        if upper_range:
+            clauses_list.append(upper_range_query)
+            params_list.append(upper_range)
+
+        additional_query = """
+            GROUP BY video_type, time_day
+            ORDER BY video_type, time_day
+        """
+
+        main_query = """
+            SELECT video_type,  COUNT(*) AS count
+            FROM watch_history
+            WHERE
+        """ + " AND ".join(clauses_list) + additional_query
+
+
+
+        pass
+
+
     def video_authenticator(self, url):
         match = re.search(r"(?:https?://)?(?:www\.)?youtube\.com/([^/?#]+)", url)
         if match:
