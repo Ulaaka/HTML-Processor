@@ -28,7 +28,7 @@ class QueryProcessor:
 
 
     def insert_history(self, history_list):
-        sql = """INSERT IGNORE INTO watch_history (video_url, video_name, channel_url, channel_name, time_stamp, video_type) VALUES (%s,%s,%s,%s,%s,%s)"""
+        sql = """INSERT IGNORE INTO watch_history (video_url, video_name, video_type, channel_url, channel_name, time_stamp) VALUES (%s,%s,%s,%s,%s,%s)"""
         self.cursor.executemany(sql, history_list)
         self.db.commit()
 
@@ -134,17 +134,19 @@ class QueryProcessor:
         return False
 
     def duration_converter(self, duration):
-        match = re.fullmatch(
-            r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?",
-            duration
-        )
+        try:
+            match = re.fullmatch(
+                r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?",
+                duration
+            )
 
-        hours = int(match.group(1) or 0)
-        minutes = int(match.group(2) or 0)
-        seconds = int(match.group(3) or 0)
+            hours = int(match.group(1) or 0)
+            minutes = int(match.group(2) or 0)
+            seconds = int(match.group(3) or 0)
 
-        return hours * 3600 + minutes * 60 + seconds
-
+            return hours * 3600 + minutes * 60 + seconds
+        except:
+            return 0
 
     def define_type(self, seconds):
         if seconds <= 180:
@@ -169,4 +171,7 @@ class QueryProcessor:
 
         data = response.json()
         # converted duration list
-        return [self.duration_converter(item["contentDetails"]["duration"]) for item in data.get("items", [])]
+        return {
+            str(item["id"]): self.duration_converter(item["contentDetails"]["duration"])
+            for item in data.get("items", [])
+        }
