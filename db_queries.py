@@ -146,7 +146,8 @@ class QueryProcessor:
         params_list = []
 
         video_type_query = "video_type = %s"
-        time_query = "HOUR(time_stamp) BETWEEN %s AND %s"
+        time_query = "HOUR(time_stamp) >= %s AND HOUR(time_stamp) < %s"
+        night_time_query = "HOUR(time_stamp) >= %s OR HOUR(time_stamp) < %s"
         lower_range_query = "time_stamp >= %s"
         upper_range_query = "time_stamp <= %s"
 
@@ -155,7 +156,11 @@ class QueryProcessor:
             params_list.append(video_type)
 
         if time:
-            clauses_list.append(time_query)
+            if time != "night":
+                clauses_list.append(time_query)
+            else:
+                clauses_list.append(night_time_query)
+
             params_list.extend(time_dictionary[time])
 
         if lower_range:
@@ -166,21 +171,21 @@ class QueryProcessor:
             clauses_list.append(upper_range_query)
             params_list.append(upper_range)
 
-        additional_query = """
-            GROUP BY video_type, time_day
-            ORDER BY video_type, time_day
-        """
+
+        condition_clause = ""
+        if len(clauses_list) != 0:
+            condition_clause+= " WHERE "
 
         main_query = """
-            SELECT video_type,  COUNT(*) AS count
+            SELECT video_type, COUNT(*) AS count
             FROM watch_history
-            WHERE
-        """ + " AND ".join(clauses_list) + additional_query
+        """ + condition_clause + " AND ".join(clauses_list) +  " GROUP BY video_type"
 
+        self.cursor.execute(main_query, params_list)
 
+        output = self.cursor.fetchall()
 
-        pass
-
+        return output
 
     def video_authenticator(self, url):
         match = re.search(r"(?:https?://)?(?:www\.)?youtube\.com/([^/?#]+)", url)

@@ -6,9 +6,7 @@ class HTML_Parser:
 
     def __init__(self, html_path):
         self.path = html_path
-        self.html_content = self.html_reader()
-        self.soup = BeautifulSoup(self.html_content, "lxml")
-        self.history_list = self.html_parser()
+        self.soup = BeautifulSoup(self.html_reader(), "lxml")
 
     def html_reader(self):
         with open(self.path, "r", encoding="utf-8") as file:
@@ -19,6 +17,8 @@ class HTML_Parser:
     def extract_info(self, section_list, query):
         return_list = []
         for i in section_list:
+
+            # could be quite slow tho
             if i.find(string=lambda t: t and t.strip().startswith("Details:")):
                 continue
 
@@ -46,6 +46,7 @@ class HTML_Parser:
             return_list.append([video_link, video_name, channel_link, channel_name, timestamp])
         return return_list
 
+
     def html_parser(self):
         query = QueryProcessor()
         general_list = []
@@ -60,8 +61,9 @@ class HTML_Parser:
             # skips unavailable videos
             duration_list = query.find_duration_video(id_list)
 
+            key_set = set(duration_list.keys())
             for idx, i in enumerate(id_list):
-                if i in list(duration_list.keys()):
+                if i in key_set:
                     result_list[idx].insert(2, query.define_type(duration_list[i]))
                 else:
                     result_list[idx].insert(2, "unavailable")
