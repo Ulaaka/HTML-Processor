@@ -154,7 +154,7 @@ class QueryProcessor:
         else:
             return "video"
 
-
+    # returns seconds of the video
     def find_duration_video(self, video_id_list):
         API_KEY = config('YOUTUBE_API')
 
@@ -164,27 +164,9 @@ class QueryProcessor:
             "id": ",".join(video_id_list),
             "key": API_KEY
         }
+
         response = requests.get(retrieval_url, params=param)
 
         data = response.json()
         # converted duration list
         return [self.duration_converter(item["contentDetails"]["duration"]) for item in data.get("items", [])]
-
-
-"""        for video_id in video_id_list:
-            if video_id != "no_id":
-                url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id={video_id}&key={API_KEY}"
-
-                response = requests.get(url)
-                data = response.json()
-
-                try:
-                    length = data['items'][0]['contentDetails']['duration']
-                    seconds = self.duration_converter(length)
-                    duration_list.append(seconds)
-                except:
-                    duration_list.append(-1)
-            else:
-                duration_list.append(0)
-        return duration_list
-"""
