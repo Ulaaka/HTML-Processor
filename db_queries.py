@@ -230,7 +230,6 @@ class QueryProcessor:
         }
 
         response = requests.get(retrieval_url, params=param)
-
         data = response.json()
         # converted duration list
         return {

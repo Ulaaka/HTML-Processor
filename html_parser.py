@@ -1,12 +1,14 @@
 from bs4 import BeautifulSoup
 from db_queries import QueryProcessor
 import dateutil.parser
+import concurrent.futures
 
 class HTML_Parser:
 
     def __init__(self, html_path):
         self.path = html_path
         self.soup = BeautifulSoup(self.html_reader(), "lxml")
+        self.history_list = self.html_parser()
 
     def html_reader(self):
         with open(self.path, "r", encoding="utf-8") as file:
@@ -46,27 +48,33 @@ class HTML_Parser:
             return_list.append([video_link, video_name, channel_link, channel_name, timestamp])
         return return_list
 
+    def section_parsing(self, section, query):
+        result_list = self.extract_info(section, query)
+        id_list = [video[0][-11:] for video in result_list]
+
+        # skips unavailable videos
+        duration_list = query.find_duration_video(id_list)
+        print(duration_list)
+
+        key_set = set(duration_list.keys())
+        for idx, i in enumerate(id_list):
+            if i in key_set:
+                result_list[idx].insert(2, query.define_type(duration_list[i]))
+            else:
+                result_list[idx].insert(2, "unavailable")
+
+        return tuple(result_list)
 
     def html_parser(self):
         query = QueryProcessor()
         general_list = []
         matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
-        SECTION_SIZE = 10
+        SECTION_SIZE = 20
 
-        for i in range(0, len(matches), SECTION_SIZE):
-            section = matches[i:i+SECTION_SIZE]
-            result_list = self.extract_info(section, query)
-            id_list = [video[0][-11:] for video in result_list]
+        sections = [matches[i:i+SECTION_SIZE] for i in range(0, len(matches), SECTION_SIZE)]
 
-            # skips unavailable videos
-            duration_list = query.find_duration_video(id_list)
-
-            key_set = set(duration_list.keys())
-            for idx, i in enumerate(id_list):
-                if i in key_set:
-                    result_list[idx].insert(2, query.define_type(duration_list[i]))
-                else:
-                    result_list[idx].insert(2, "unavailable")
-            general_list.extend(tuple(result_list))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            for result in list(executor.map(lambda section: self.section_parsing(section, query), sections)):
+                general_list.extend(result)
 
         return general_list
