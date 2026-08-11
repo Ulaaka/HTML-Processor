@@ -69,11 +69,11 @@ class HTML_Parser:
         query = QueryProcessor()
         general_list = []
         matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
-        SECTION_SIZE = 20
+        SECTION_SIZE = 40
 
         sections = [matches[i:i+SECTION_SIZE] for i in range(0, len(matches), SECTION_SIZE)]
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             for result in list(executor.map(lambda section: self.section_parsing(section, query), sections)):
                 general_list.extend(result)
 
