@@ -54,8 +54,6 @@ class HTML_Parser:
 
         # skips unavailable videos
         duration_list = query.find_duration_video(id_list)
-        print(duration_list)
-
         key_set = set(duration_list.keys())
         for idx, i in enumerate(id_list):
             if i in key_set:
