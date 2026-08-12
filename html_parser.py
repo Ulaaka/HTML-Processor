@@ -50,6 +50,12 @@ class HTML_Parser:
 
 
     def category_mapper(self, categoryID, query):
+        """
+        Maps the category id of video to its description
+
+        input: category ID
+        param: mapped description
+        """
         try:
             return query.category_mapping(categoryID)
         except:
