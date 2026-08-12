@@ -48,6 +48,14 @@ class HTML_Parser:
             return_list.append([video_link, video_name, channel_link, channel_name, timestamp])
         return return_list
 
+
+    def category_mapper(self, categoryID, query):
+        try:
+            return query.category_mapping(categoryID)
+        except:
+            return "could not be identified"
+
+
     def section_parsing(self, section, query):
         result_list = self.extract_info(section, query)
         id_list = [video[0][-11:] for video in result_list]
@@ -57,9 +65,9 @@ class HTML_Parser:
         key_set = set(duration_list.keys())
         for idx, i in enumerate(id_list):
             if i in key_set:
-                result_list[idx].insert(2, query.define_type(duration_list[i]))
+                result_list[idx][2:2] = [query.define_type(duration_list[i][0]), self.category_mapper(duration_list[i][1])]
             else:
-                result_list[idx].insert(2, "unavailable")
+                result_list[idx][2:2] = ["unavailable", "unavailable"]
 
         return tuple(result_list)
 

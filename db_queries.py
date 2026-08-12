@@ -42,7 +42,7 @@ class QueryProcessor:
             '25': 'News & Politics', 
             '26': 'Howto & Style', 
             '27': 'Education', 
-            '28': 'Science & Technology', 
+            '28': 'Science & Technology',
             '30': 'Movies', 
             '31': 'Anime/Animation', 
             '32': 'Action/Adventure', 
@@ -63,7 +63,7 @@ class QueryProcessor:
 
 
     def insert_history(self, history_list):
-        sql = """INSERT IGNORE INTO watch_history (video_url, video_name, video_type, channel_url, channel_name, time_stamp) VALUES (%s,%s,%s,%s,%s,%s)"""
+        sql = """INSERT IGNORE INTO watch_history (video_url, video_name, video_type, video_category, channel_url, channel_name, time_stamp) VALUES (%s,%s,%s,%s,%s,%s,%s)"""
         self.cursor.executemany(sql, history_list)
         self.db.commit()
 
@@ -307,16 +307,9 @@ class QueryProcessor:
 
         response = requests.get(retrieval_url, params=param)
         data = response.json()
-        # converted duration list
-        #categoryId
-
-        print({
-            str(item["id"]): item["snippet"]["categoryId"]
-            for item in data.get("items", [])
-        })
-
+        # converted duration list, category ID
         return {
-            str(item["id"]): self.duration_converter(item["contentDetails"]["duration"])
+            str(item["id"]): [self.duration_converter(item["contentDetails"]["duration"]), item["snippet"]["categoryId"]]
             for item in data.get("items", [])
         }
 
