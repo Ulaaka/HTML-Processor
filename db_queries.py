@@ -26,6 +26,41 @@ class QueryProcessor:
 
         self.stop_words = set(stopwords.words('english'))
 
+        self.category_mapping = {
+            '1': 'Film & Animation', 
+            '2': 'Autos & Vehicles', 
+            '10': 'Music', 
+            '15': 'Pets & Animals', 
+            '17': 'Sports', 
+            '18': 'Short Movies', 
+            '19': 'Travel & Events', 
+            '20': 'Gaming', 
+            '21': 'Videoblogging', 
+            '22': 'People & Blogs', 
+            '23': 'Comedy', 
+            '24': 'Entertainment', 
+            '25': 'News & Politics', 
+            '26': 'Howto & Style', 
+            '27': 'Education', 
+            '28': 'Science & Technology', 
+            '30': 'Movies', 
+            '31': 'Anime/Animation', 
+            '32': 'Action/Adventure', 
+            '33': 'Classics', 
+            '34': 'Comedy', 
+            '35': 'Documentary', 
+            '36': 'Drama', 
+            '37': 'Family', 
+            '38': 'Foreign', 
+            '39': 'Horror', 
+            '40': 'Sci-Fi/Fantasy', 
+            '41': 'Thriller', 
+            '42': 'Shorts', 
+            '43': 'Shows', 
+            '44': 'Trailers'
+        }
+
+
 
     def insert_history(self, history_list):
         sql = """INSERT IGNORE INTO watch_history (video_url, video_name, video_type, channel_url, channel_name, time_stamp) VALUES (%s,%s,%s,%s,%s,%s)"""
@@ -187,6 +222,46 @@ class QueryProcessor:
 
         return output
 
+
+    def weekly_trend(self, trend_number=None, video_type=None):
+        pass
+
+    def monthly_trend(self, trend_number=None, video_type=None):
+        pass
+
+    def seasonal_trend(self, season_specify=None, video_type=None):
+        pass
+
+    def yearly_trend(self, video_type=None):
+        pass
+
+    def binge_watch_detection(self, lower_range=None, upper_range=None):
+        pass
+
+    def streak_analysis(self, with_or_without="with", lower_range=None, upper_range=None):
+        pass
+
+    def video_length_preference(self, lower_range=None, upper_range=None):
+        pass
+
+    def unavailable_videos(self,video_type=None, lower_range=None, upper_range=None):
+        pass
+
+    def first_video_ever_watched(self):
+        pass
+
+    def last_video_ever_watched(self):
+        pass
+
+    def the_longest_untouched_channel(self, lower_range=None, upper_range=None):
+        pass
+
+    def random_day_discovery(self):
+        pass
+
+    def the_longest_titled_video(self, lower_range=None, upper_range=None):
+        pass
+
     def video_authenticator(self, url):
         match = re.search(r"(?:https?://)?(?:www\.)?youtube\.com/([^/?#]+)", url)
         if match:
@@ -213,7 +288,7 @@ class QueryProcessor:
     def define_type(self, seconds):
         if seconds <= 180:
             return "reel"
-        elif seconds == -1:
+        elif seconds == -1:#
             return "unavailable video"
         else:
             return "video"
@@ -224,15 +299,40 @@ class QueryProcessor:
 
         retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
         param = {
-            "part": "contentDetails",
+            "part": "snippet, contentDetails",
             "id": ",".join(video_id_list),
+            "regionCode" : "UK",
             "key": API_KEY
         }
 
         response = requests.get(retrieval_url, params=param)
         data = response.json()
         # converted duration list
+        #categoryId
+
+        print({
+            str(item["id"]): item["snippet"]["categoryId"]
+            for item in data.get("items", [])
+        })
+
         return {
             str(item["id"]): self.duration_converter(item["contentDetails"]["duration"])
+            for item in data.get("items", [])
+        }
+
+    def map_category_numbers(self):
+        API_KEY = config('YOUTUBE_API')
+        retrieval_url = 'https://www.googleapis.com/youtube/v3/videoCategories'
+        param = {
+            "part": "snippet",
+            "regionCode": "UK",
+            "key": API_KEY
+        }
+
+        response = requests.get(retrieval_url, params=param)
+        data = response.json()
+
+        return {
+            item["id"]: item["snippet"]["title"]
             for item in data.get("items", [])
         }
