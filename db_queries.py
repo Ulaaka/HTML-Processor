@@ -288,7 +288,7 @@ class QueryProcessor:
     def define_type(self, seconds):
         if seconds <= 180:
             return "reel"
-        elif seconds == -1:#
+        elif seconds == -1:
             return "unavailable video"
         else:
             return "video"
