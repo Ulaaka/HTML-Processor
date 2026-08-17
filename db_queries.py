@@ -217,13 +217,52 @@ class QueryProcessor:
         pass
 
     def the_longest_untouched_channel(self, lower_range=None, upper_range=None):
-        pass
+        """
+        Needs to have a neglect score where the user can discover channels they used to watch long before
+
+        calculation: number of days since the last video was watched * the total number videos watched by a channel
+        """
+
+        sql = """
+            SELECT
+            channel_name,
+            channel_url,
+            total_count,
+            DATEDIFF(NOW(), last_watch),
+            DATEDIFF(NOW(), last_watch) * total_count AS neglect_score
+            FROM
+                (
+                SELECT COUNT(*) AS total_count, 
+                MAX(time_stamp) AS last_watch,
+                channel_name,
+                channel_url
+                FROM watch_history
+                GROUP BY channel_name, channel_url
+            )
+            AS custom
+            ORDER BY neglect_score DESC
+            LIMIT 10
+            """
+        self.cursor.execute(sql)
+        output = self.cursor.fetchall()
+        return output if output else None
 
     def random_day_discovery(self):
         pass
 
-    def the_longest_titled_video(self, lower_range=None, upper_range=None):
-        pass
+    def the_longest_titled_video(self, video_type=None, video_limit=None):
+        limit = 10
+        if video_limit:
+            limit = video_limit
+
+        where_query = ""
+        if video_type:
+            where_query = f" WHERE video_type = {video_type} "
+
+        sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {limit} "
+        self.cursor.execute(sql)
+        output = self.cursor.fetchall()
+        return output if output else None
 
     def video_authenticator(self, url):
         match = re.search(r"(?:https?://)?(?:www\.)?youtube\.com/([^/?#]+)", url)
@@ -264,7 +303,7 @@ class QueryProcessor:
         param = {
             "part": "snippet, contentDetails",
             "id": ",".join(video_id_list),
-            "regionCode" : "UK",
+            "regionCode" : "GB",
             "key": API_KEY
         }
 
@@ -281,7 +320,7 @@ class QueryProcessor:
         retrieval_url = 'https://www.googleapis.com/youtube/v3/videoCategories'
         param = {
             "part": "snippet",
-            "regionCode": "UK",
+            "regionCode": "GB",
             "key": API_KEY
         }
 
@@ -292,3 +331,14 @@ class QueryProcessor:
             item["id"]: item["snippet"]["title"]
             for item in data.get("items", [])
         }
+
+    def regionCodes_search(self):
+        API_KEY = config('YOUTUBE_API')
+        retrieval_url = "https://www.googleapis.com/youtube/v3/i18nRegions"
+        params = {
+            "part": "snippet",
+            "key": API_KEY
+        }
+        response = requests.get(retrieval_url, params=params)
+        data = response.json()
+        return [item["id"] for item in data["items"]]
