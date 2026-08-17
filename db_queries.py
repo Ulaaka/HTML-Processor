@@ -220,30 +220,47 @@ class QueryProcessor:
         """
         Needs to have a neglect score where the user can discover channels they used to watch long before
 
-        calculation: number of days since the last video was watched * the total number videos watched by a channel
+        Calculation: number of days since the last video was watched * the total number videos watched by a channel
         """
 
-        sql = """
+        time_query = ""
+        params = []
+
+        if lower_range and not upper_range:
+            time_query = " WHERE time_stamp >= %s "
+            params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " WHERE time_stamp <= %s "
+            params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
+            params = [lower_range, upper_range]
+
+        custom_table = f"""
+            SELECT COUNT(*) AS total_count, 
+            MAX(time_stamp) AS last_watch,
+            channel_name,
+            channel_url
+            FROM watch_history
+            {time_query}
+            GROUP BY channel_name, channel_url
+        """
+
+        sql = f"""
             SELECT
             channel_name,
             channel_url,
             total_count,
-            DATEDIFF(NOW(), last_watch),
+            DATEDIFF(NOW(), last_watch) AS days_since_last,
             DATEDIFF(NOW(), last_watch) * total_count AS neglect_score
-            FROM
-                (
-                SELECT COUNT(*) AS total_count, 
-                MAX(time_stamp) AS last_watch,
-                channel_name,
-                channel_url
-                FROM watch_history
-                GROUP BY channel_name, channel_url
-            )
-            AS custom
+            FROM ({custom_table}) AS custom
             ORDER BY neglect_score DESC
             LIMIT 10
-            """
-        self.cursor.execute(sql)
+        """
+
+        self.cursor.execute(sql, params)
         output = self.cursor.fetchall()
         return output if output else None
 
