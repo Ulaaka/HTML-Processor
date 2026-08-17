@@ -210,11 +210,17 @@ class QueryProcessor:
     def unavailable_videos(self,video_type=None, lower_range=None, upper_range=None):
         pass
 
-    def first_video_ever_watched(self):
-        pass
+    def first_video_ever_watched(self, video_limit=1):
+        sql = f"SELECT video_name, video_url, video_type, video_category FROM watch_history ORDER BY time_stamp ASC LIMIT {video_limit} "
+        self.cursor.execute(sql)
+        output = self.cursor.fetchall()
+        return output if output else None
 
-    def last_video_ever_watched(self):
-        pass
+    def last_videos_ever_watched(self, video_limit=1):
+        sql = f"SELECT video_name, video_url, video_type, video_category FROM watch_history ORDER BY time_stamp DESC LIMIT {video_limit} "
+        self.cursor.execute(sql)
+        output = self.cursor.fetchall()
+        return output if output else None
 
     def the_longest_untouched_channel(self, lower_range=None, upper_range=None):
         """
@@ -279,16 +285,13 @@ class QueryProcessor:
         itinerary = self.cursor.fetchall()
         return itinerary
 
-    def the_longest_titled_video(self, video_type=None, video_limit=None):
-        limit = 10
-        if video_limit:
-            limit = video_limit
+    def the_longest_titled_video(self, video_type=None, video_limit=10):
 
         where_query = ""
         if video_type:
             where_query = f" WHERE video_type = {video_type} "
 
-        sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {limit} "
+        sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {video_limit} "
         self.cursor.execute(sql)
         output = self.cursor.fetchall()
         return output if output else None
