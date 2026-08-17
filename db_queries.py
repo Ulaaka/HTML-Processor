@@ -4,6 +4,7 @@ from nltk.corpus import stopwords
 from collections import defaultdict
 import operator, re, requests
 from decouple import config
+from datetime import timedelta
 
 
 
@@ -186,10 +187,55 @@ class QueryProcessor:
 
         return output
 
-    def weekly_trend(self, trend_number=None, video_type=None):
-        pass
+    def weekly_trend(self, week_back=0, video_type='video'):
+        """
+        0 -> this week
+        1 -> previous week and so on
+        """
+        sql_last_date = """SELECT MAX(time_stamp) from watch_history"""
+        self.cursor.execute(sql_last_date)
+        last_date = self.cursor.fetchone()[0]
+
+        from_interval = week_back * 7 + last_date.weekday()
+
+        if week_back == 0:
+            to_interval = 0
+        else:
+            to_interval = from_interval - 7
+
+        additional_sql = ""
+
+        count_list = []
+        for i in range(from_interval, to_interval, -1):
+            query_date = last_date - timedelta(days=i)
+            next_date = query_date + timedelta(days=1)
+
+
+            params = [query_date, next_date]
+
+            additional_sql = ""
+
+            if video_type:
+                additional_sql = " AND video_type = %s"
+                params.append(video_type)
+
+            sql = """
+                SELECT COUNT(*)
+                FROM watch_history
+                WHERE time_stamp >= %s
+                AND time_stamp < %s
+            """ + additional_sql
+
+            self.cursor.execute(sql, params)
+            output = self.cursor.fetchone()
+            count_list.append(output[0])
+
+        return count_list
 
     def monthly_trend(self, trend_number=None, video_type=None):
+        """
+        Should show this month's breakdown of watch by weeks
+        """
         pass
 
     def seasonal_trend(self, season_specify=None, video_type=None):
@@ -276,7 +322,7 @@ class QueryProcessor:
         print(random_date)
 
         sql = """
-            SELECT video_name, video_url, video_type, video_category
+            SELECT video_name, video_url, video_type, video_category, time_stamp
             FROM watch_history
             WHERE time_stamp >= %s AND time_stamp < %s + INTERVAL 1 DAY
             ORDER BY time_stamp ASC
