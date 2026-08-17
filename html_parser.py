@@ -8,7 +8,44 @@ class HTML_Parser:
     def __init__(self, html_path):
         self.path = html_path
         self.soup = BeautifulSoup(self.html_reader(), "lxml")
+
+        self.category_mapping = {
+            '1': 'Film & Animation', 
+            '2': 'Autos & Vehicles', 
+            '10': 'Music', 
+            '15': 'Pets & Animals', 
+            '17': 'Sports', 
+            '18': 'Short Movies', 
+            '19': 'Travel & Events', 
+            '20': 'Gaming', 
+            '21': 'Videoblogging', 
+            '22': 'People & Blogs', 
+            '23': 'Comedy', 
+            '24': 'Entertainment', 
+            '25': 'News & Politics', 
+            '26': 'Howto & Style', 
+            '27': 'Education', 
+            '28': 'Science & Technology',
+            '30': 'Movies', 
+            '31': 'Anime/Animation', 
+            '32': 'Action/Adventure', 
+            '33': 'Classics', 
+            '34': 'Comedy', 
+            '35': 'Documentary', 
+            '36': 'Drama', 
+            '37': 'Family', 
+            '38': 'Foreign', 
+            '39': 'Horror', 
+            '40': 'Sci-Fi/Fantasy', 
+            '41': 'Thriller', 
+            '42': 'Shorts', 
+            '43': 'Shows', 
+            '44': 'Trailers'
+        }
+
         self.history_list = self.html_parser()
+
+
 
     def html_reader(self):
         with open(self.path, "r", encoding="utf-8") as file:
@@ -49,7 +86,7 @@ class HTML_Parser:
         return return_list
 
 
-    def category_mapper(self, categoryID, query):
+    def category_mapper(self, categoryID):
         """
         Maps the category id of video to its description
 
@@ -57,7 +94,7 @@ class HTML_Parser:
         param: mapped description
         """
         try:
-            return query.category_mapping(categoryID)
+            return self.category_mapping[categoryID]
         except:
             return "could not be identified"
 
@@ -71,7 +108,9 @@ class HTML_Parser:
         key_set = set(duration_list.keys())
         for idx, i in enumerate(id_list):
             if i in key_set:
-                result_list[idx][2:2] = [query.define_type(duration_list[i][0]), self.category_mapper(duration_list[i][1])]
+                video_type = query.define_type(duration_list[i][0])
+                video_category = self.category_mapper(duration_list[i][1])
+                result_list[idx][2:2] = [video_type, video_category]
             else:
                 result_list[idx][2:2] = ["unavailable", "unavailable"]
 
