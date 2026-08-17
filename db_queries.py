@@ -187,7 +187,7 @@ class QueryProcessor:
 
         return output
 
-    def weekly_trend(self, week_back=0, video_type='video'):
+    def weekly_trend(self, week_back=0, video_type=None):
         """
         0 -> this week
         1 -> previous week and so on
