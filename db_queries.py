@@ -265,7 +265,19 @@ class QueryProcessor:
         return output if output else None
 
     def random_day_discovery(self):
-        pass
+        self.cursor.execute("SELECT DISTINCT DATE(time_stamp) AS d FROM watch_history ORDER BY RAND() LIMIT 1")
+        random_date = self.cursor.fetchone()[0]
+        print(random_date)
+
+        sql = """
+            SELECT video_name, video_url, video_type, video_category
+            FROM watch_history
+            WHERE time_stamp >= %s AND time_stamp < %s + INTERVAL 1 DAY
+            ORDER BY time_stamp ASC
+        """
+        self.cursor.execute(sql, (random_date, random_date))
+        itinerary = self.cursor.fetchall()
+        return itinerary
 
     def the_longest_titled_video(self, video_type=None, video_limit=None):
         limit = 10
