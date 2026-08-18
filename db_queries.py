@@ -26,6 +26,12 @@ class QueryProcessor:
         self.cursor = connection.cursor
 
         self.stop_words = set(stopwords.words('english'))
+        self.season_month_map = {
+            "winter": [12, 1, 2],
+            "spring": [3, 4, 5],
+            "summer": [6, 7, 8],
+            "autumn": [9, 10, 11]
+        }
 
 
     def insert_history(self, history_list):
@@ -275,9 +281,33 @@ class QueryProcessor:
         pass
 
     def seasonal_trend(self, year_back=None, season_specify=None, video_type=None):
-        
-        pass
+        if year_back is None:
+            year_back = self.last_year()
 
+        if season_specify is None:
+            season_specify = list(self.season_month_map.keys())
+        else:
+            season_specify = [season_specify]
+
+        season_dict = {}
+        for s in season_specify:
+            month_count = 0
+            for m in self.season_month_map[s]:
+                params = [year_back, m]
+
+                additional_sql = ""
+                if video_type:
+                    additional_sql = " AND video_type = %s"
+                    params.append(video_type)
+
+                sql = "SELECT COUNT(*) FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s" + additional_sql
+                self.cursor.execute(sql, params)
+                output = self.cursor.fetchone()[0]
+                month_count+=output
+
+            season_dict[s] = month_count
+
+        return season_dict
 
     def last_year(self):
         sql_last_date = """SELECT YEAR(MAX(time_stamp)) from watch_history"""
