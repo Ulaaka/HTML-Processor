@@ -171,7 +171,6 @@ class QueryProcessor:
             clauses_list.append(upper_range_query)
             params_list.append(upper_range)
 
-
         condition_clause = ""
         if len(clauses_list) != 0:
             condition_clause+= " WHERE "
@@ -196,11 +195,10 @@ class QueryProcessor:
             current_date = self.last_day()
         else:
             current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
-        next_date = current_date + timedelta(days=1)
 
-        params = [current_date, next_date]
+        params = [current_date, current_date]
 
-        sql = "SELECT HOUR(time_stamp), video_name, video_url FROM watch_history WHERE time_stamp >= %s AND time_stamp < %s "
+        sql = "SELECT HOUR(time_stamp), video_name, video_url FROM watch_history WHERE time_stamp >= %s AND time_stamp < %s + INTERVAL 1 DAY"
 
         add_sql = ""
         if video_type:
@@ -215,11 +213,11 @@ class QueryProcessor:
 
         for i in output:
             if i[0] not in hour_dict:
-                hour_dict[i[0]] = set()
+                hour_dict[i[0]] = []
 
-            hour_dict[i[0]].add((i[1], i[2]))
+            hour_dict[i[0]].extend([i[1], i[2]])
 
-        return hour_dict
+        return hour_dict, len(output)
 
     def last_day(self):
         sql_last_date = """SELECT MAX(time_stamp) from watch_history"""
@@ -247,10 +245,8 @@ class QueryProcessor:
         count_list = []
         for i in range(from_interval, to_interval, -1):
             query_date = last_date - timedelta(days=i)
-            next_date = query_date + timedelta(days=1)
 
-
-            params = [query_date, next_date]
+            params = [query_date, query_date]
 
             additional_sql = ""
 
@@ -261,8 +257,7 @@ class QueryProcessor:
             sql = """
                 SELECT COUNT(*)
                 FROM watch_history
-                WHERE time_stamp >= %s
-                AND time_stamp < %s
+                WHERE time_stamp >= %s AND time_stamp < %s + INTERVAL 1 DAY 
             """ + additional_sql
 
             self.cursor.execute(sql, params)
@@ -275,6 +270,7 @@ class QueryProcessor:
         """
         Should show this month's breakdown of watch by weeks
         """
+        sql = "SELECT DATE(time_stamp) FROM watch_history WHERE "
         pass
 
     def seasonal_trend(self, season_specify=None, video_type=None):
