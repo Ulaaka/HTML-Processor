@@ -266,18 +266,45 @@ class QueryProcessor:
 
         return count_list
 
-    def monthly_trend(self, trend_number=None, video_type=None):
+    def monthly_trend(self, month_back=None, video_type=None):
         """
         Should show this month's breakdown of watch by weeks
         """
+
         sql = "SELECT DATE(time_stamp) FROM watch_history WHERE "
         pass
 
-    def seasonal_trend(self, season_specify=None, video_type=None):
+    def seasonal_trend(self, year_back=None, season_specify=None, video_type=None):
+        
         pass
 
-    def yearly_trend(self, video_type=None):
-        pass
+
+    def last_year(self):
+        sql_last_date = """SELECT YEAR(MAX(time_stamp)) from watch_history"""
+        self.cursor.execute(sql_last_date)
+        last_year = self.cursor.fetchone()[0]
+        return last_year
+
+
+    def yearly_trend(self, year_back=None, video_type=None):
+        if year_back is None:
+            year_back = self.last_year()
+
+        result_list = []
+        for i in range(1, 13):
+            params = [year_back,  i]
+
+            add_sql = ""
+            if video_type:
+                add_sql = " AND video_type = %s"
+                params.append(video_type)
+
+            sql = "SELECT COUNT(*) FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s" + add_sql
+            self.cursor.execute(sql, params)
+            output = self.cursor.fetchone()
+            result_list.append(output)
+
+        return result_list
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
