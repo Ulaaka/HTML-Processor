@@ -9,7 +9,7 @@ path = os.path.join("data_folder", "watch-history.html")
 #processor = HTML_Processor(parser.history_list)
 
 query = QueryProcessor()
-print(query.weekly_trend(1))
+print(query.daily_trend(current_date="2026-06-16"))
 #query.find_duration_video(['8yqp-iOj220', 'Sr6urU4gC3I'])
 #print(query.the_most_watched_channel())
 #result = query.complex_function(video_type="reel", time="evening")

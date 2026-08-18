@@ -4,7 +4,7 @@ from nltk.corpus import stopwords
 from collections import defaultdict
 import operator, re, requests
 from decouple import config
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 
@@ -187,14 +187,53 @@ class QueryProcessor:
 
         return output
 
+    def daily_trend(self, video_type=None, current_date=None):
+        """
+        Call last_day func to get the latest day's trend.
+        """
+
+        if current_date is None:
+            current_date = self.last_day()
+        else:
+            current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
+        next_date = current_date + timedelta(days=1)
+
+        params = [current_date, next_date]
+
+        sql = "SELECT HOUR(time_stamp), video_name, video_url FROM watch_history WHERE time_stamp >= %s AND time_stamp < %s "
+
+        add_sql = ""
+        if video_type:
+            add_sql = "AND video_type = %s"
+            sql+=add_sql
+            params.append(video_type)
+
+        self.cursor.execute(sql, params)
+        output = self.cursor.fetchall()
+
+        hour_dict = {}
+
+        for i in output:
+            if i[0] not in hour_dict:
+                hour_dict[i[0]] = set()
+
+            hour_dict[i[0]].add((i[1], i[2]))
+
+        return hour_dict
+
+    def last_day(self):
+        sql_last_date = """SELECT MAX(time_stamp) from watch_history"""
+        self.cursor.execute(sql_last_date)
+        last_date = self.cursor.fetchone()[0].date()
+        return last_date
+
     def weekly_trend(self, week_back=0, video_type=None):
         """
         0 -> this week
         1 -> previous week and so on
         """
-        sql_last_date = """SELECT MAX(time_stamp) from watch_history"""
-        self.cursor.execute(sql_last_date)
-        last_date = self.cursor.fetchone()[0]
+
+        last_date = self.last_day()
 
         from_interval = week_back * 7 + last_date.weekday()
 
