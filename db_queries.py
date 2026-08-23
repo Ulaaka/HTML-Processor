@@ -363,17 +363,32 @@ class QueryProcessor:
         return result_list
 
     def channel_life_cycle(self, channel):
-
+        
         pass
 
     def category_balance(self):
         pass
 
     def topic_obsession_cluster(self):
+
         pass
 
-    def interest_analysis(self, lower_range=None, upper_range=None):
-        pass
+    def interest_analysis(self, year, month, video_type=None):
+
+        """
+        Find the most common interests given time duration
+        """
+        params = [year, month]
+        type_sql = ""
+        if  video_type:
+            type_sql = " AND video_type = %s "
+            params.append(video_type)
+
+        sql = "SELECT DISTINCT video_category, COUNT(*)  FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s" + type_sql + " GROUP BY video_category ORDER BY COUNT(*) DESC "
+        self.cursor.execute(sql, params)
+        output = self.cursor.fetchall()
+
+        return output
 
     def number_of_unique_channels_watched_month(self, year, month):
         """
@@ -455,7 +470,7 @@ class QueryProcessor:
         return max(time_day_dict.items(),  key=lambda x: x[1])
 
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
-        
+
         pass
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
@@ -471,12 +486,18 @@ class QueryProcessor:
         pass
 
     def first_video_ever_watched(self, video_limit=1):
+        """
+        Finds the first ever video watched
+        """
         sql = f"SELECT video_name, video_url, video_type, video_category FROM watch_history ORDER BY time_stamp ASC LIMIT {video_limit} "
         self.cursor.execute(sql)
         output = self.cursor.fetchall()
         return output if output else None
 
     def last_videos_ever_watched(self, video_limit=1):
+        """
+        Finds the last video watched
+        """
         sql = f"SELECT video_name, video_url, video_type, video_category FROM watch_history ORDER BY time_stamp DESC LIMIT {video_limit} "
         self.cursor.execute(sql)
         output = self.cursor.fetchall()
@@ -531,6 +552,9 @@ class QueryProcessor:
         return output if output else None
 
     def random_day_discovery(self):
+        """
+        Shows the itinerary of one random day
+        """
         self.cursor.execute("SELECT DISTINCT DATE(time_stamp) AS d FROM watch_history ORDER BY RAND() LIMIT 1")
         random_date = self.cursor.fetchone()[0]
         print(random_date)
@@ -546,7 +570,9 @@ class QueryProcessor:
         return itinerary
 
     def the_longest_titled_video(self, video_type=None, video_limit=10):
-
+        """
+        Finds the longest titles video
+        """
         where_query = ""
         if video_type:
             where_query = f" WHERE video_type = {video_type} "
