@@ -7,7 +7,6 @@ from decouple import config
 from datetime import timedelta, datetime
 
 
-
 class QueryProcessor:
 
     """
@@ -35,19 +34,28 @@ class QueryProcessor:
 
 
     def insert_history(self, history_list):
+        """
+        Inserts parsed info into database
+
+        """
         sql = """INSERT IGNORE INTO watch_history (video_url, video_name, video_type, video_category, channel_url, channel_name, time_stamp) VALUES (%s,%s,%s,%s,%s,%s,%s)"""
         self.cursor.executemany(sql, history_list)
         self.db.commit()
 
 
     def the_most_watched_channel(self):
-
+        """
+        Finds the most watched channels (top 20)
+        """
         sql = "SELECT channel_name, channel_url, COUNT(*) AS count FROM watch_history GROUP BY channel_name, channel_url ORDER BY count DESC LIMIT 20"
         self.cursor.execute(sql)
         output = self.cursor.fetchall()
         return output if output else None
 
     def the_most_watched_videos(self):
+        """
+        Finds the most watched videos (top 20)
+        """
 
         sql = "SELECT video_name, video_url, COUNT(*) AS count FROM watch_history GROUP BY video_name, video_url ORDER BY count DESC LIMIT 20"
         self.cursor.execute(sql)
@@ -56,7 +64,9 @@ class QueryProcessor:
 
 
     def the_most_repeated_words(self):
-
+        """
+        Finds the most repeated words in the names of the videos
+        """
         sql = "SELECT DISTINCT video_name FROM watch_history"
         self.cursor.execute(sql)
         output = self.cursor.fetchall()
@@ -74,6 +84,9 @@ class QueryProcessor:
 
 
     def return_by_name_combination(self, sentence):
+        """
+        Finds videos by the combination of words instead of full description
+        """
         words = sentence.split()
 
         sql = "SELECT DISTINCT video_name, video_url FROM watch_history WHERE " + " AND ".join(["video_name LIKE %s"] * len(words))
@@ -89,6 +102,9 @@ class QueryProcessor:
 
     def the_busiest_day(self, lower_range=None, upper_range=None, limit=None):
         # needs to be adjusted after updating database column
+        """
+        Finds the busiest days recorded
+        """
 
         sql_main = "SELECT COUNT(*) as count, DATE(time_stamp) as day from watch_history"
 
@@ -114,6 +130,7 @@ class QueryProcessor:
 
 
     def unique_type_find(self):
+
         type_set = set()
         sql = "SELECT video_url from watch_history"
         self.cursor.execute(sql)
@@ -226,6 +243,9 @@ class QueryProcessor:
         return hour_dict, len(output)
 
     def last_day(self):
+        """
+        Finds the last recorded day
+        """
         sql_last_date = """SELECT MAX(time_stamp) from watch_history"""
         self.cursor.execute(sql_last_date)
         last_date = self.cursor.fetchone()[0].date()
@@ -281,6 +301,9 @@ class QueryProcessor:
         pass
 
     def seasonal_trend(self, year_back=None, season_specify=None, video_type=None):
+        """
+        Finds the trend of view by the seasons
+        """
         if year_back is None:
             year_back = self.last_year()
 
@@ -310,6 +333,9 @@ class QueryProcessor:
         return season_dict
 
     def last_year(self):
+        """
+        Finds the last year recorded
+        """
         sql_last_date = """SELECT YEAR(MAX(time_stamp)) from watch_history"""
         self.cursor.execute(sql_last_date)
         last_year = self.cursor.fetchone()[0]
@@ -335,6 +361,102 @@ class QueryProcessor:
             result_list.append(output)
 
         return result_list
+
+    def channel_life_cycle(self, channel):
+
+        pass
+
+    def category_balance(self):
+        pass
+
+    def topic_obsession_cluster(self):
+        pass
+
+    def interest_analysis(self, lower_range=None, upper_range=None):
+        pass
+
+    def number_of_unique_channels_watched_month(self, year, month):
+        """
+        Finds the number of unique channels within the given time
+        """
+        sql = """ SELECT DISTINCT channel_name, channel_url, COUNT(*) as count FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s GROUP BY channel_name, channel_url ORDER BY count DESC"""
+        self.cursor.execute(sql, [year, month])
+        output = self.cursor.fetchall()
+        return output
+
+    def max_day_of_the_week(self, lower_range=None, upper_range=None, video_type=None):
+        """
+        Finds the day of the week where the most videos/reel are watched
+        """
+
+        time_query = ""
+        add_params = []
+
+        if lower_range and not upper_range:
+            time_query = " AND time_stamp >= %s "
+            add_params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " AND time_stamp <= %s "
+            add_params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
+            add_params = [lower_range, upper_range]
+
+        type_sql = ""
+        if video_type:
+            type_sql = " AND video_type = %s"
+            add_params.append(video_type)
+
+        week_day_dict = {}
+        for i in range(0, 7):
+            params = [i]
+            sql = "SELECT COUNT(*) FROM watch_history WHERE WEEKDAY(time_stamp) = %s" + time_query + type_sql
+            params.extend(add_params)
+            self.cursor.execute(sql, params)
+            output = self.cursor.fetchone()
+            week_day_dict[i+1] = output
+
+        return max(week_day_dict.items(), key=lambda x: x[1])
+
+    def max_time_of_the_day(self, lower_range=None, upper_range=None, video_type=None):
+        """Finds the time of the day where the most videos/reel are watched"""
+
+        time_query = ""
+        add_params = []
+
+        if lower_range and not upper_range:
+            time_query = " AND time_stamp >= %s "
+            add_params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " AND time_stamp <= %s "
+            add_params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
+            add_params = [lower_range, upper_range]
+
+        type_sql = ""
+        if video_type:
+            type_sql = " AND video_type = %s"
+            add_params.append(video_type)
+
+        time_day_dict = {}
+
+        for i in range(0, 24):
+            params = [i]
+            sql = "SELECT COUNT(*) FROM watch_history WHERE HOUR(time_stamp) = %s" + time_query + type_sql
+            params.extend(add_params)
+            self.cursor.execute(sql, params)
+            output = self.cursor.fetchone()
+            time_day_dict[i] = output
+        return max(time_day_dict.items(),  key=lambda x: x[1])
+
+    def weekday_vs_weekend(self, lower_range=None, upper_range=None):
+        
+        pass
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
