@@ -6,7 +6,11 @@ import operator, re, requests
 from decouple import config
 from datetime import timedelta, datetime
 
-
+"""
+Needs to be divided into separate files.
+Some of the funcs can be combines and better explained
+Needs to finish the rest of the query funcs to start the front-end work
+"""
 class QueryProcessor:
 
     """
