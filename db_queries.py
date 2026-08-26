@@ -367,31 +367,36 @@ class QueryProcessor:
         return result_list
 
     def channel_life_cycle(self, channel):
-        
-        pass
 
-    def category_balance(self):
         pass
 
     def topic_obsession_cluster(self):
 
         pass
 
-    def interest_analysis(self, year, month, video_type=None):
+    def interest_analysis(self, year, month=None, video_type=None):
 
         """
         Find the most common interests given time duration
         """
-        params = [year, month]
+        params = [year]
+
+        month_query = ""
+        if month:
+            month_query+= " AND MONTH(time_stamp) = %s"
+            params.append(month)
+
         type_sql = ""
         if  video_type:
             type_sql = " AND video_type = %s "
             params.append(video_type)
 
-        sql = "SELECT DISTINCT video_category, COUNT(*)  FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s" + type_sql + " GROUP BY video_category ORDER BY COUNT(*) DESC "
+        sql = "SELECT DISTINCT video_category, COUNT(*)  FROM watch_history WHERE YEAR(time_stamp) = %s" + month_query + type_sql + " GROUP BY video_category ORDER BY COUNT(*) DESC "
         self.cursor.execute(sql, params)
         output = self.cursor.fetchall()
 
+
+        [category[1] for category in output]
         return output
 
     def number_of_unique_channels_watched_month(self, year, month):
@@ -474,7 +479,7 @@ class QueryProcessor:
         return max(time_day_dict.items(),  key=lambda x: x[1])
 
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
-
+        
         pass
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
