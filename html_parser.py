@@ -75,7 +75,6 @@ class HTML_Parser:
         return_list = []
         for i in section_list:
 
-            # could be quite slow tho
             if i.find(string=lambda t: t and t.strip().startswith("Details:")):
                 continue
 
@@ -116,12 +115,12 @@ class HTML_Parser:
         except:
             return "could not be identified"
 
-
     def section_parsing(self, section, query):
         result_list = self.extract_info(section, query)
         id_list = [video[0][-11:] for video in result_list]
 
         # skips unavailable videos
+        # should really try to optimize pandas using vectorization, mapping, and numpy libs
         duration_list = query.find_duration_video(id_list)
         key_set = set(duration_list.keys())
         for idx, i in enumerate(id_list):
@@ -148,3 +147,12 @@ class HTML_Parser:
                 general_list.extend(result)
 
         return general_list
+
+    def html_chunker(self):
+        import os
+
+        # total size is 46230891
+        chunk = str(self.soup)[: 1000000]
+        with open(os.path.join("data_folder", "small_chunk.html"), "w", encoding="utf-8") as f:
+            f.write(chunk)
+

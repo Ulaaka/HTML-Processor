@@ -5,6 +5,7 @@ from collections import defaultdict
 import operator, re, requests
 from decouple import config
 from datetime import timedelta, datetime
+import requests
 
 """
 Needs to be divided into separate files.
@@ -21,7 +22,6 @@ class QueryProcessor:
         """
         Constructor for database querying class
         """
-
         # database connection
         self.connection = Database()
         connection = self.connection
@@ -35,7 +35,6 @@ class QueryProcessor:
             "summer": [6, 7, 8],
             "autumn": [9, 10, 11]
         }
-
 
     def insert_history(self, history_list):
         """
@@ -371,6 +370,7 @@ class QueryProcessor:
         pass
 
     def topic_obsession_cluster(self):
+        
 
         pass
 
@@ -479,13 +479,14 @@ class QueryProcessor:
         return max(time_day_dict.items(),  key=lambda x: x[1])
 
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
-        
+
         pass
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
 
     def streak_analysis(self, with_or_without="with", lower_range=None, upper_range=None):
+        # i will actualy be able to do it
         pass
 
     def video_length_preference(self, lower_range=None, upper_range=None):
@@ -622,8 +623,7 @@ class QueryProcessor:
         else:
             return "video"
 
-    # returns seconds of the video
-    def find_duration_video(self, video_id_list):
+    def api_request(self, video_id_list):
         API_KEY = config('YOUTUBE_API')
 
         retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
@@ -635,12 +635,32 @@ class QueryProcessor:
         }
 
         response = requests.get(retrieval_url, params=param)
-        data = response.json()
-        # converted duration list, category ID
-        return {
-            str(item["id"]): [self.duration_converter(item["contentDetails"]["duration"]), item["snippet"]["categoryId"]]
-            for item in data.get("items", [])
-        }
+        return response
+
+    # returns seconds of the video
+    def find_duration_video(self, video_id_list):
+        API_KEY = config('YOUTUBE_API')
+
+        chunks = [video_id_list[i:i+50] for i in range(0, len(video_id_list), 50)]
+
+        result = {}
+        session = requests.Session()
+        for chunk in chunks:
+            retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
+            param = {
+                "part": "snippet, contentDetails",
+                "id": ",".join(chunk),
+                "regionCode" : "GB",
+                "key": API_KEY
+            }
+
+            response = session.get(retrieval_url, params=param)
+            data = response.json()
+
+            for item in data.get("items", []):
+                result[item["id"]] = [self.duration_converter(item["contentDetails"]["duration"]), item["snippet"]["categoryId"]]
+        return result
+
 
     def map_category_numbers(self):
         API_KEY = config('YOUTUBE_API')
