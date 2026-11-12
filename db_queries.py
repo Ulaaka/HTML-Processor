@@ -2,13 +2,8 @@
 from database_connection import Database
 from nltk.corpus import stopwords
 from collections import defaultdict
-import operator, re, requests
-from decouple import config
+import operator, re
 from datetime import timedelta, datetime
-import requests
-import asyncio
-import aiohttp
-import time
 
 """
 Needs to be divided into separate files.
@@ -609,21 +604,6 @@ class QueryProcessor:
 
         return False
 
-    def duration_converter(self, duration):
-        try:
-            match = re.fullmatch(
-                r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?",
-                duration
-            )
-
-            hours = int(match.group(1) or 0)
-            minutes = int(match.group(2) or 0)
-            seconds = int(match.group(3) or 0)
-
-            return hours * 3600 + minutes * 60 + seconds
-        except:
-            return 0
-
     def define_type(self, seconds):
         if seconds <= 180:
             return "reel"
@@ -632,69 +612,3 @@ class QueryProcessor:
         else:
             return "video"
 
-    def api_request(self, video_id_list):
-        # old version of request
-        retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
-        param = {
-            "part": "snippet, contentDetails",
-            "id": ",".join(video_id_list),
-            "regionCode" : "GB",
-            "key": config('YOUTUBE_API')
-        }
-
-        response = requests.get(retrieval_url, params=param)
-        return response
-
-    async def find_duration_video(self, video_ids):
-        sem = asyncio.Semaphore(10)
-
-        async with aiohttp.ClientSession() as session:
-
-            async def fetch_one(chunk):
-                params = {
-                    "part": "snippet,contentDetails",
-                    "id": ",".join(chunk),
-                    "regionCode": "GB",
-                    "key": config('YOUTUBE_API'),
-                }
-                async with sem:
-                    async with session.get(self.urls['video'], params=params) as response:
-                        response.raise_for_status() 
-                        return await response.json()
-
-            responses = await asyncio.gather(*(fetch_one(chunk) for chunk in [video_ids[i:i + 50] for i in range(0, len(video_ids), 50)]))
-
-        result = {
-            item["id"]: [
-                self.duration_converter(item["contentDetails"]["duration"]),
-                item["snippet"]["categoryId"],
-            ]
-            for data in responses
-            for item in data.get("items", [])
-        }
-
-        return result
-
-    def map_category_numbers(self):
-        param = {
-            "part": "snippet",
-            "regionCode": "GB",
-            "key": config('YOUTUBE_API')
-        }
-
-        response = requests.get(self.urls['category'], params=param)
-        data = response.json()
-
-        return {
-            item["id"]: item["snippet"]["title"]
-            for item in data.get("items", [])
-        }
-
-    def regionCodes_search(self):
-        params = {
-            "part": "snippet",
-            "key": config('YOUTUBE_API')
-        }
-        response = requests.get(self.urls['region'], params=params)
-        data = response.json()
-        return [item["id"] for item in data["items"]]
