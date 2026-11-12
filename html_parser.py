@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from db_queries import QueryProcessor
 import dateutil.parser
 import concurrent.futures
-
+import asyncio
 class HTML_Parser:
 
     def __init__(self, html_path):
@@ -114,14 +114,13 @@ class HTML_Parser:
             return self.category_mapping[categoryID]
         except:
             return "could not be identified"
-
     def section_parsing(self, section, query):
         result_list = self.extract_info(section, query)
         id_list = [video[0][-11:] for video in result_list]
 
         # skips unavailable videos
         # should really try to optimize pandas using vectorization, mapping, and numpy libs
-        duration_list = query.find_duration_video(id_list)
+        duration_list = asyncio.run(query.find_duration_video(id_list))
         key_set = set(duration_list.keys())
         for idx, i in enumerate(id_list):
             if i in key_set:

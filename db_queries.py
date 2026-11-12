@@ -6,6 +6,9 @@ import operator, re, requests
 from decouple import config
 from datetime import timedelta, datetime
 import requests
+import asyncio
+import aiohttp
+import time
 
 """
 Needs to be divided into separate files.
@@ -637,30 +640,33 @@ class QueryProcessor:
         response = requests.get(retrieval_url, params=param)
         return response
 
-    # returns seconds of the video
-    def find_duration_video(self, video_id_list):
-        API_KEY = config('YOUTUBE_API')
+    async def find_duration_video(self, video_ids):
+        sem = asyncio.Semaphore(5)
 
-        chunks = [video_id_list[i:i+50] for i in range(0, len(video_id_list), 50)]
+        async with aiohttp.ClientSession() as session:
 
-        result = {}
-        session = requests.Session()
-        for chunk in chunks:
-            retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
-            param = {
-                "part": "snippet, contentDetails",
-                "id": ",".join(chunk),
-                "regionCode" : "GB",
-                "key": API_KEY
-            }
+            async def fetch_one(chunk):
+                retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
 
-            response = session.get(retrieval_url, params=param)
-            data = response.json()
+                params = {
+                    "part": "snippet,contentDetails",
+                    "id": ",".join(chunk),
+                    "regionCode": "GB",
+                    "key": config('YOUTUBE_API'),
+                }
+                async with sem:
+                    async with session.get(retrieval_url, params=params) as response:
+                        response.raise_for_status()
+                        return await response.json()
 
-            for item in data.get("items", []):
-                result[item["id"]] = [self.duration_converter(item["contentDetails"]["duration"]), item["snippet"]["categoryId"]]
-        return result
+            results = await asyncio.gather(*(fetch_one(chunk) for chunk in [video_ids[i:i + 50] for i in range(0, len(video_ids), 50)]))
 
+
+        return {
+            dict[item["id"]] :  [self.duration_converter(item["contentDetails"]["duration"]), item["snippet"]["categoryId"]]
+            for data in results
+            for item in data.get("items", [])
+        }
 
     def map_category_numbers(self):
         API_KEY = config('YOUTUBE_API')

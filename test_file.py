@@ -4,6 +4,6 @@ from db_queries import QueryProcessor
 import os
 
 path = os.path.join("data_folder", "small_chunk.html")
-
 parser = HTML_Parser(path)
 processor = HTML_Processor(parser.history_list)
+
