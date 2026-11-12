@@ -4,7 +4,8 @@ from nltk.corpus import stopwords
 from collections import defaultdict
 import operator, re
 from datetime import timedelta, datetime
-
+import pandas as pd 
+from sqlalchemy import create_engine
 """
 Needs to be divided into separate files.
 Some of the funcs can be combines and better explained
@@ -32,12 +33,6 @@ class QueryProcessor:
             "spring": [3, 4, 5],
             "summer": [6, 7, 8],
             "autumn": [9, 10, 11]
-        }
-
-        self.urls ={
-            'video': 'https://www.googleapis.com/youtube/v3/videos',
-            'category' : 'https://www.googleapis.com/youtube/v3/videoCategories',
-            'region' : "https://www.googleapis.com/youtube/v3/i18nRegions"
         }
 
     def insert_history(self, history_list):
@@ -374,7 +369,6 @@ class QueryProcessor:
         pass
 
     def topic_obsession_cluster(self):
-        
 
         pass
 
@@ -483,8 +477,34 @@ class QueryProcessor:
         return max(time_day_dict.items(),  key=lambda x: x[1])
 
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
+        # average number of videos, reels, category, can find top categories of each
+        sql_define_days = """
+            select
+                video_type,
+                sum(case when day_type = 'weekday' then avg else 0 end) as weekday_avg,
+                sum(case when day_type = 'weekend' then avg else 0 end) as weekend_avg
+            from (
+                    select
+                        day_type,
+                        video_type,
+                        round(count(*) / (case when day_type = 'weekday' then 5 else 2 end), 2) as avg
+                    from (
+                            select
+                                *,
+                                case
+                                    when weekday(time_stamp) < 5 THEN 'weekday'
+                                    else 'weekend'
+                                    end AS day_type
+                            from watch_history
+                        ) as t
+                    group by day_type, video_type
+                ) as t
+            group by video_type
+        """
 
-        pass
+        self.cursor.execute(sql_define_days)
+        day_type_averages = self.cursor.fetchall()
+        return day_type_averages
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
@@ -595,20 +615,4 @@ class QueryProcessor:
         self.cursor.execute(sql)
         output = self.cursor.fetchall()
         return output if output else None
-
-    def video_authenticator(self, url):
-        match = re.search(r"(?:https?://)?(?:www\.)?youtube\.com/([^/?#]+)", url)
-        if match:
-            if match.group(1) == "watch":
-                return True
-
-        return False
-
-    def define_type(self, seconds):
-        if seconds <= 180:
-            return "reel"
-        elif seconds == -1:
-            return "unavailable video"
-        else:
-            return "video"
 

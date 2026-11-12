@@ -1,9 +1,8 @@
 from bs4 import BeautifulSoup
 from db_queries import QueryProcessor
 from requests import Requests
-import dateutil.parser
-import concurrent.futures
-import asyncio
+import dateutil.parser, concurrent.futures, asyncio, os, re
+
 class HTML_Parser:
 
     def __init__(self, html_path):
@@ -64,15 +63,47 @@ class HTML_Parser:
 
         self.history_list = self.html_parser()
 
-
-
     def html_reader(self):
         with open(self.path, "r", encoding="utf-8") as file:
             html_content = file.read()
 
         return html_content
 
-    def extract_info(self, section_list, query):
+    def html_parser(self):
+        query = QueryProcessor()
+        request = Requests()
+        general_list = []
+        matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
+        SECTION_SIZE = 40
+
+        sections = [matches[i:i+SECTION_SIZE] for i in range(0, len(matches), SECTION_SIZE)]
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            for result in list(executor.map(lambda section: self.section_parsing(section, request), sections)):
+                general_list.extend(result)
+
+        return general_list
+
+    def section_parsing(self, section, request):
+
+        result_list = self.extract_info(section)
+        id_list = [video[0][-11:] for video in result_list]
+
+        # skips unavailable videos
+        # should really try to optimize pandas using vectorization, mapping, and numpy libs
+        duration_list = asyncio.run(request.find_duration_video(id_list))
+        key_set = set(duration_list.keys())
+        for idx, i in enumerate(id_list):
+            if i in key_set:
+                video_type = self.define_type(duration_list[i][0])
+                video_category = self.category_mapper(duration_list[i][1])
+                result_list[idx][2:2] = [video_type, video_category]
+            else:
+                result_list[idx][2:2] = ["unavailable", "unavailable"]
+
+        return tuple(result_list)
+
+    def extract_info(self, section_list):
         return_list = []
         for i in section_list:
 
@@ -97,12 +128,27 @@ class HTML_Parser:
             timestamp = list(sub_content.stripped_strings)[-1].replace("\u202f", " ")
             timestamp = dateutil.parser.parse(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
-            if not query.video_authenticator(video_link):
+            if not self.video_authenticator(video_link):
                 continue
 
             return_list.append([video_link, video_name, channel_link, channel_name, timestamp])
         return return_list
 
+    def video_authenticator(self, url):
+        match = re.search(r"(?:https?://)?(?:www\.)?youtube\.com/([^/?#]+)", url)
+        if match:
+            if match.group(1) == "watch":
+                return True
+
+        return False
+
+    def define_type(self, seconds):
+        if seconds <= 180:
+            return "reel"
+        elif seconds == -1:
+            return "unavailable video"
+        else:
+            return "video"
 
     def category_mapper(self, categoryID):
         """
@@ -116,46 +162,10 @@ class HTML_Parser:
         except:
             return "could not be identified"
 
-    def section_parsing(self, section, query, request):
 
-        result_list = self.extract_info(section, query)
-        id_list = [video[0][-11:] for video in result_list]
-
-        # skips unavailable videos
-        # should really try to optimize pandas using vectorization, mapping, and numpy libs
-        duration_list = asyncio.run(request.find_duration_video(id_list))
-        key_set = set(duration_list.keys())
-        for idx, i in enumerate(id_list):
-            if i in key_set:
-                video_type = query.define_type(duration_list[i][0])
-                video_category = self.category_mapper(duration_list[i][1])
-                result_list[idx][2:2] = [video_type, video_category]
-            else:
-                result_list[idx][2:2] = ["unavailable", "unavailable"]
-
-        return tuple(result_list)
-
-    def html_parser(self):
-        query = QueryProcessor()
-        request = Requests()
-        general_list = []
-        matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
-        SECTION_SIZE = 40
-
-        sections = [matches[i:i+SECTION_SIZE] for i in range(0, len(matches), SECTION_SIZE)]
-
-        # threads for execution
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            for result in list(executor.map(lambda section: self.section_parsing(section, query, request), sections)):
-                general_list.extend(result)
-
-        return general_list
-
-    def html_chunker(self):
-        import os
-
+    def html_chunker(self, size = 1000000):
         # total size is 46230891
-        chunk = str(self.soup)[: 1000000]
+        chunk = str(self.soup)[: size]
         with open(os.path.join("data_folder", "small_chunk.html"), "w", encoding="utf-8") as f:
             f.write(chunk)
 
