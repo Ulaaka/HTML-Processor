@@ -1,11 +1,11 @@
 
 from database_connection import Database
 from nltk.corpus import stopwords
-from collections import defaultdict
-import operator, re
+import re
 from datetime import timedelta, datetime
 import pandas as pd 
-from sqlalchemy import create_engine
+from typing import Literal
+
 """
 Needs to be divided into separate files.
 Some of the funcs can be combines and better explained
@@ -25,6 +25,7 @@ class QueryProcessor:
         self.connection = Database()
         connection = self.connection
         self.db = connection.db
+        self.table = pd.read_sql("select * from watch_history", self.db)
         self.cursor = connection.cursor
 
         self.stop_words = set(stopwords.words('english'))
@@ -35,6 +36,7 @@ class QueryProcessor:
             "autumn": [9, 10, 11]
         }
 
+
     def insert_history(self, history_list):
         """
         Inserts parsed info into database
@@ -44,31 +46,41 @@ class QueryProcessor:
         self.cursor.executemany(sql, history_list)
         self.db.commit()
 
+    def date_rage_handler(self, lower_range, upper_range, as_dataframe = False):
+        time_query = ""
+        params = []
+
+        if lower_range and not upper_range:
+            time_query = " AND time_stamp >= %s "
+            params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " AND time_stamp <= %s "
+            params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
+            params = [lower_range, upper_range]
+
+        if as_dataframe:
+            self.cursor.execute("select * from watch_history", params)
+            return  pd.DataFrame(self.cursor.fetchall(), columns = [col[0] for col in self.cursor.description])
+
+        return time_query, params
 
     def the_most_watched_channel(self):
         """
         Finds the most watched channels (top 20)
         """
         sql = "SELECT channel_name, channel_url, COUNT(*) AS count FROM watch_history GROUP BY channel_name, channel_url ORDER BY count DESC LIMIT 20"
+
         self.cursor.execute(sql)
-        output = self.cursor.fetchall()
-        return output if output else None
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Channel Name', 'Channel URL', 'Total Watch'])
+        return df
 
     def most_watched_channel_per_month(self, lower_range = None, upper_range = None):
-        time_query = ""
-        add_params = []
 
-        if lower_range and not upper_range:
-            time_query = " AND time_stamp >= %s "
-            add_params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " AND time_stamp <= %s "
-            add_params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
-            add_params = [lower_range, upper_range]
+        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select month, channel_name, total_watched
@@ -88,87 +100,80 @@ class QueryProcessor:
             order by month asc
         """
 
-        self.cursor.execute(sql, add_params)
-        output = self.cursor.fetchall()
-        return output if output else None
+        self.cursor.execute(sql, params)
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Year - Month', 'Channel Name', 'Total Watch'])
+        return df
 
 
-    def the_most_watched_videos(self):
+    def the_most_watched_videos(self, lower_range = None, upper_range = None):
         """
         Finds the most watched videos (top 20)
         """
-
-        sql = "SELECT video_name, video_url, COUNT(*) AS count FROM watch_history GROUP BY video_name, video_url ORDER BY count DESC LIMIT 20"
-        self.cursor.execute(sql)
-        output = self.cursor.fetchall()
-        return output if output else None
+        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
 
-    def the_most_repeated_words(self):
-        """
-        Finds the most repeated words in the names of the videos
-        """
-        sql = "SELECT DISTINCT video_name FROM watch_history"
-        self.cursor.execute(sql)
-        output = self.cursor.fetchall()
+        sql = f"SELECT video_name, video_url, COUNT(*) AS count FROM watch_history {time_query} GROUP BY video_name, video_url ORDER BY count DESC LIMIT 20"
+        self.cursor.execute(sql, params)
 
-        words_dic = defaultdict(int)
-        for row in output:
-            video_name = row[0]
-            for word in video_name.split():
-                if word not in self.stop_words:
-                    words_dic[word] +=1
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Video Name', 'Video URL', 'Total Watch'])
 
-        sorted_x = sorted(words_dic.items(), key=operator.itemgetter(1))
-
-        return sorted_x
+        return df
 
 
-    def return_by_name_combination(self, sentence):
+    def the_most_repeated_words(self, lower_range = None, upper_range = None):
+
+        df= self.date_rage_handler(lower_range, upper_range, as_dataframe=True).drop_duplicates(subset='video_name')
+
+        df['video_name'] = df['video_name'].str.strip().str.lower().str.split().to_list()
+        df = df.explode('video_name')
+        df['video_name'] = df['video_name'].str.replace(r'[^a-zA-Z0-9]', '', regex=True)
+        df = df[(~df['video_name'].isin(list(self.stop_words))) & (df['video_name'].str.len() >= 2)]
+
+        result = df.groupby('video_name', as_index=False).size()\
+                .sort_values('size', ascending=False)\
+                .rename(columns = {'video_name' : 'Word', 'size' : 'Total Count'})\
+                .reset_index(drop=True)
+
+        return result.head(20)
+
+
+    def return_by_name_combination(self, sentence, lower_range = None, upper_range = None):
         """
         Finds videos by the combination of words instead of full description
         """
+        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+
         words = sentence.split()
 
-        sql = "SELECT DISTINCT video_name, video_url FROM watch_history WHERE " + " AND ".join(["video_name LIKE %s"] * len(words))
+        sql = f"SELECT DISTINCT video_name, video_url, time_stamp FROM watch_history WHERE {time_query}"  + " AND ".join(["video_name LIKE %s"] * len(words)) + 'ORDER BY time_stamp DESC'
 
-        params = [f"%{w}%" for w in words]
+        params += [f"%{word}%" for word in words]
 
         self.cursor.execute(sql, params)
-
-        output = self.cursor.fetchall()
-
-        return output
+        df = pd.DataFrame(self.cursor.fetchall(), columns = ['Video Name', 'Video URL', 'Timestamp'])
+        return df
 
 
     def the_busiest_day(self, lower_range=None, upper_range=None, limit=None):
-        # needs to be adjusted after updating database column
         """
         Finds the busiest days recorded
         """
 
-        sql_main = "SELECT COUNT(*) as count, DATE(time_stamp) as day from watch_history"
+        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
-        if lower_range and not upper_range:
-            sql_main += f"WHERE time_stamp >= {lower_range}"
-        if not lower_range and upper_range:
-            sql_main += f"WHERE time_stamp >= {upper_range}"
-
-        if lower_range and upper_range:
-            sql_main += f"WHERE time_stamp >= {lower_range} AND time_stamp <= {upper_range}"
-
-        sql_end = " GROUP BY day ORDER BY count DESC"
-        sql_main+= sql_end
-
-        if limit:
-            sql_main+=f" LIMIT {limit}"
-
-        self.cursor.execute(sql_main)
-
-        output = self.cursor.fetchall()
-
-        return output
-
+        sql = f"""
+            select
+                date(time_stamp) as date,
+                dayname(time_stamp) as week_day,
+                count(*) as total_count
+            from watch_history
+            {time_query}
+            group by date, week_day
+            order by total_count desc, week_day asc
+        """
+        self.cursor.execute(sql, params)
+        df = pd.DataFrame( self.cursor.fetchall(), columns=['Date', 'Day of Week', 'Total Count'])
+        return df.head(20)
 
     def unique_type_find(self):
 
@@ -189,8 +194,7 @@ class QueryProcessor:
         return type_set
 
 
-
-    def complex_function(self, video_type=None, time=None, lower_range=None, upper_range=None):
+    def date_type_time_func(self, video_type:Literal["reel", "video", "unavailable"] = None, time:Literal["morning", "afternoon", "evening", "night"] = None, lower_range=None, upper_range=None):
         """
         Should show the result based on the user's toggles
 
@@ -246,42 +250,10 @@ class QueryProcessor:
 
         self.cursor.execute(main_query, params_list)
 
-        output = self.cursor.fetchall()
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Video Type', 'Total Count'])
 
-        return output
+        return df
 
-    def daily_trend(self, video_type=None, current_date=None):
-        """
-        Call last_day func to get the latest day's trend.
-        """
-
-        if current_date is None:
-            current_date = self.last_day()
-        else:
-            current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
-
-        params = [current_date, current_date]
-
-        sql = "SELECT HOUR(time_stamp), video_name, video_url FROM watch_history WHERE time_stamp >= %s AND time_stamp < %s + INTERVAL 1 DAY"
-
-        add_sql = ""
-        if video_type:
-            add_sql = "AND video_type = %s"
-            sql+=add_sql
-            params.append(video_type)
-
-        self.cursor.execute(sql, params)
-        output = self.cursor.fetchall()
-
-        hour_dict = {}
-
-        for i in output:
-            if i[0] not in hour_dict:
-                hour_dict[i[0]] = []
-
-            hour_dict[i[0]].extend([i[1], i[2]])
-
-        return hour_dict, len(output)
 
     def last_day(self):
         """
@@ -292,47 +264,42 @@ class QueryProcessor:
         last_date = self.cursor.fetchone()[0].date()
         return last_date
 
-    def weekly_trend(self, week_back=0, video_type=None):
-        """
-        0 -> this week
-        1 -> previous week and so on
-        """
+
+    def daily_trend(self, video_type:Literal["reel", "video", "unavailable"] = None, current_date=None):
 
         last_date = self.last_day()
 
-        from_interval = week_back * 7 + last_date.weekday()
+        if not current_date or datetime.strptime(current_date, "%Y-%m-%d").date() > last_date:
+            current_date = last_date
 
-        if week_back == 0:
-            to_interval = 0
-        else:
-            to_interval = from_interval - 7
+        add_sql = "COUNT(*)"
+        params = []
 
-        additional_sql = ""
+        if video_type:
+            add_sql = "COUNT(CASE WHEN video_type = %s THEN 1 END)"
+            params.append(video_type)
 
-        count_list = []
-        for i in range(from_interval, to_interval, -1):
-            query_date = last_date - timedelta(days=i)
+        sql = f"""
+            SELECT
+                DATE(time_stamp) as day,
+                HOUR(time_stamp) as hour,
+                {add_sql} AS hour_count
+            FROM watch_history
+            WHERE DATE(time_stamp) = %s
+            GROUP BY day, hour
+            ORDER BY hour ASC
+        """
 
-            params = [query_date, query_date]
+        params.append(current_date)
 
-            additional_sql = ""
+        self.cursor.execute(sql, params=params)
+        df = pd.DataFrame(self.cursor.fetchall(),columns=['day', 'Hour', 'Total Count'])
 
-            if video_type:
-                additional_sql = " AND video_type = %s"
-                params.append(video_type)
+        return df
 
-            sql = """
-                SELECT COUNT(*)
-                FROM watch_history
-                WHERE time_stamp >= %s AND time_stamp < %s + INTERVAL 1 DAY 
-            """ + additional_sql
-
-            self.cursor.execute(sql, params)
-            output = self.cursor.fetchone()
-            count_list.append(output[0])
-
-        return count_list
-
+    def weekly_trend(self, video_type:Literal["reel", "video", "unavailable"] = None):
+        # needs to be cleaned
+        pass
     def monthly_trend(self, month_back=None, video_type=None):
         """
         Should show this month's breakdown of watch by weeks
@@ -647,9 +614,8 @@ class QueryProcessor:
             group by month, video_type
             order by month
         """
-        table = pd.read_sql(sql, self.db)
 
-        pivoted = pd.pivot_table(table, index='video_type', columns='month', values='video_type_month_total').reset_index()
+        pivoted = pd.pivot_table(self.table, index='video_type', columns='month', values='video_type_month_total')
         return pivoted
 
     def unavailable_videos(self, category_type=None, lower_range=None, upper_range=None):
