@@ -39,6 +39,12 @@ class QueryProcessor:
             "autumn": [9, 10, 11]
         }
 
+        self.urls ={
+            'video': 'https://www.googleapis.com/youtube/v3/videos',
+            'category' : 'https://www.googleapis.com/youtube/v3/videoCategories',
+            'region' : "https://www.googleapis.com/youtube/v3/i18nRegions"
+        }
+
     def insert_history(self, history_list):
         """
         Inserts parsed info into database
@@ -627,27 +633,24 @@ class QueryProcessor:
             return "video"
 
     def api_request(self, video_id_list):
-        API_KEY = config('YOUTUBE_API')
-
+        # old version of request
         retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
         param = {
             "part": "snippet, contentDetails",
             "id": ",".join(video_id_list),
             "regionCode" : "GB",
-            "key": API_KEY
+            "key": config('YOUTUBE_API')
         }
 
         response = requests.get(retrieval_url, params=param)
         return response
 
     async def find_duration_video(self, video_ids):
-        sem = asyncio.Semaphore(5)
+        sem = asyncio.Semaphore(10)
 
         async with aiohttp.ClientSession() as session:
 
             async def fetch_one(chunk):
-                retrieval_url = 'https://www.googleapis.com/youtube/v3/videos'
-
                 params = {
                     "part": "snippet,contentDetails",
                     "id": ",".join(chunk),
@@ -655,29 +658,31 @@ class QueryProcessor:
                     "key": config('YOUTUBE_API'),
                 }
                 async with sem:
-                    async with session.get(retrieval_url, params=params) as response:
-                        response.raise_for_status()
+                    async with session.get(self.urls['video'], params=params) as response:
+                        response.raise_for_status() 
                         return await response.json()
 
-            results = await asyncio.gather(*(fetch_one(chunk) for chunk in [video_ids[i:i + 50] for i in range(0, len(video_ids), 50)]))
+            responses = await asyncio.gather(*(fetch_one(chunk) for chunk in [video_ids[i:i + 50] for i in range(0, len(video_ids), 50)]))
 
-
-        return {
-            dict[item["id"]] :  [self.duration_converter(item["contentDetails"]["duration"]), item["snippet"]["categoryId"]]
-            for data in results
+        result = {
+            item["id"]: [
+                self.duration_converter(item["contentDetails"]["duration"]),
+                item["snippet"]["categoryId"],
+            ]
+            for data in responses
             for item in data.get("items", [])
         }
 
+        return result
+
     def map_category_numbers(self):
-        API_KEY = config('YOUTUBE_API')
-        retrieval_url = 'https://www.googleapis.com/youtube/v3/videoCategories'
         param = {
             "part": "snippet",
             "regionCode": "GB",
-            "key": API_KEY
+            "key": config('YOUTUBE_API')
         }
 
-        response = requests.get(retrieval_url, params=param)
+        response = requests.get(self.urls['category'], params=param)
         data = response.json()
 
         return {
@@ -686,12 +691,10 @@ class QueryProcessor:
         }
 
     def regionCodes_search(self):
-        API_KEY = config('YOUTUBE_API')
-        retrieval_url = "https://www.googleapis.com/youtube/v3/i18nRegions"
         params = {
             "part": "snippet",
-            "key": API_KEY
+            "key": config('YOUTUBE_API')
         }
-        response = requests.get(retrieval_url, params=params)
+        response = requests.get(self.urls['region'], params=params)
         data = response.json()
         return [item["id"] for item in data["items"]]
