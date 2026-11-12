@@ -54,6 +54,45 @@ class QueryProcessor:
         output = self.cursor.fetchall()
         return output if output else None
 
+    def most_watched_channel_per_month(self, lower_range = None, upper_range = None):
+        time_query = ""
+        add_params = []
+
+        if lower_range and not upper_range:
+            time_query = " AND time_stamp >= %s "
+            add_params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " AND time_stamp <= %s "
+            add_params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
+            add_params = [lower_range, upper_range]
+
+        sql = f"""
+            select month, channel_name, total_watched
+            from (
+                select *, rank() over (partition by month order by  total_watched desc) as ranked
+                from (
+                        select
+                        DATE_FORMAT(time_stamp, "%Y-%m") as month,
+                        channel_name,
+                        count(*) as total_watched
+                        from watch_history
+                        {time_query}
+                        group by DATE_FORMAT(time_stamp, "%Y-%m"), channel_name, channel_url
+                ) as t
+            ) as t1
+            where ranked =  1
+            order by month asc
+        """
+
+        self.cursor.execute(sql, add_params)
+        output = self.cursor.fetchall()
+        return output if output else None
+
+
     def the_most_watched_videos(self):
         """
         Finds the most watched videos (top 20)
@@ -478,7 +517,23 @@ class QueryProcessor:
 
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
         # average number of videos, reels, category, can find top categories of each
-        sql_define_days = """
+
+        time_query = ""
+        params = []
+
+        if lower_range and not upper_range:
+            time_query = " WHERE time_stamp >= %s "
+            params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " WHERE time_stamp <= %s "
+            params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
+            params = [lower_range, upper_range]
+
+        sql_define_days = f"""
             select
                 video_type,
                 sum(case when day_type = 'weekday' then avg else 0 end) as weekday_avg,
@@ -499,25 +554,130 @@ class QueryProcessor:
                         ) as t
                     group by day_type, video_type
                 ) as t
+            {time_query}
             group by video_type
         """
 
-        self.cursor.execute(sql_define_days)
+        self.cursor.execute(sql_define_days, params)
         day_type_averages = self.cursor.fetchall()
         return day_type_averages
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
 
-    def streak_analysis(self, with_or_without="with", lower_range=None, upper_range=None):
-        # i will actualy be able to do it
-        pass
+    def streak_analysis(self, lower_range=None, upper_range=None):
+
+        time_query = ""
+        params = []
+
+        if lower_range and not upper_range:
+            time_query = " WHERE time_stamp >= %s "
+            params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " WHERE time_stamp <= %s "
+            params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
+            params = [lower_range, upper_range]
+
+        sql = f"""
+            SELECT
+                MIN(d) AS streak_start,
+                MAX(d) AS streak_end,
+                COUNT(*) AS streak
+            FROM (
+                    SELECT
+                        d,
+                        DATE_SUB(d, INTERVAL ROW_NUMBER() OVER (ORDER BY d) DAY) AS grp
+                    FROM (
+                            SELECT DISTINCT DATE(time_stamp) AS d
+                            FROM watch_history
+                        ) AS days
+                ) AS t
+            {time_query}
+            GROUP BY grp
+            ORDER BY streak DESC
+        """
+
+        self.cursor.execute(sql, params)
+        steak_length = self.cursor.fetchall()
+        return steak_length
 
     def video_length_preference(self, lower_range=None, upper_range=None):
-        pass
+        time_query = ""
+        params = []
 
-    def unavailable_videos(self,video_type=None, lower_range=None, upper_range=None):
-        pass
+        if lower_range and not upper_range:
+            time_query = " WHERE time_stamp >= %s "
+            params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " WHERE time_stamp <= %s "
+            params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
+            params = [lower_range, upper_range]
+
+        sql = f"""
+            select
+                video_type,
+                count(*) as total
+            from watch_history
+            {time_query}
+            group by video_type
+            order by total desc
+        """
+
+        self.cursor.execute(sql, params)
+        video_pref = self.cursor.fetchall()
+        return video_pref
+
+    def video_length_trend_over_month(self):
+
+        sql = """
+            select
+                date_format(time_stamp, "%Y-%m") as month,
+                video_type,
+                count(*) as video_type_month_total
+            from watch_history
+            where video_type != 'unavailable'
+            group by month, video_type
+            order by month
+        """
+        table = pd.read_sql(sql, self.db)
+
+        pivoted = pd.pivot_table(table, index='video_type', columns='month', values='video_type_month_total').reset_index()
+        return pivoted
+
+    def unavailable_videos(self, category_type=None, lower_range=None, upper_range=None):
+
+        time_query = ""
+        params = []
+
+        if lower_range and not upper_range:
+            time_query = " WHERE time_stamp >= %s "
+            params = [lower_range]
+
+        if not lower_range and upper_range:
+            time_query = " WHERE time_stamp <= %s "
+            params = [upper_range]
+
+        if lower_range and upper_range:
+            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
+            params = [lower_range, upper_range]
+
+        sql = f"""
+            select
+                count(case when video_type = 'unavailable' then 1 end)
+            from watch_history
+            {time_query}
+        """
+        self.cursor.execute(sql, params)
+        unavailable = self.cursor.fetchone()
+        return unavailable
 
     def first_video_ever_watched(self, video_limit=1):
         """
