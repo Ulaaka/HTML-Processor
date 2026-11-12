@@ -299,8 +299,10 @@ class QueryProcessor:
 
     def weekly_trend(self, video_type:Literal["reel", "video", "unavailable"] = None):
         # needs to be cleaned
+        # try year-month and find the max, after that find the weeks they belong in, then for each show
         pass
     def monthly_trend(self, month_back=None, video_type=None):
+        # find the latest year
         """
         Should show this month's breakdown of watch by weeks
         """
