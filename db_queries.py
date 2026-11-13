@@ -46,25 +46,25 @@ class QueryProcessor:
         self.cursor.executemany(sql, history_list)
         self.db.commit()
 
-    def date_rage_handler(self, lower_range, upper_range, as_dataframe = False):
+    def date_range_handler(self, lower_range=None, upper_range=None, as_dataframe=False):
         time_query = ""
         params = []
 
-        if lower_range and not upper_range:
-            time_query = " AND time_stamp >= %s "
-            params = [lower_range]
+        if lower_range:
+            time_query += " AND time_stamp >= %s"
+            params.append(lower_range)
 
-        if not lower_range and upper_range:
-            time_query = " AND time_stamp <= %s "
-            params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
-            params = [lower_range, upper_range]
+        if upper_range:
+            time_query += " AND time_stamp <= %s"
+            params.append(upper_range)
 
         if as_dataframe:
-            self.cursor.execute("select * from watch_history", params)
-            return  pd.DataFrame(self.cursor.fetchall(), columns = [col[0] for col in self.cursor.description])
+            query = "SELECT * FROM watch_history WHERE 1=1" + time_query
+            self.cursor.execute(query, params)
+            return pd.DataFrame(
+                self.cursor.fetchall(),
+                columns=[col[0] for col in self.cursor.description],
+            )
 
         return time_query, params
 
@@ -194,67 +194,44 @@ class QueryProcessor:
         return type_set
 
 
-    def date_type_time_func(self, video_type:Literal["reel", "video", "unavailable"] = None, time:Literal["morning", "afternoon", "evening", "night"] = None, lower_range=None, upper_range=None):
+    def date_type_time_func(
+            self,
+            video_type:Literal["reel", "video", "unavailable"] = None,
+            time:Literal["morning", "afternoon", "evening", "night"] = None,
+            category = None,
+            lower_range=None,
+            upper_range=None):
+
         """
         Should show the result based on the user's toggles
 
         video types = Reel, Video, Unavailable
         time = Morning, Afternoon, Evening, Night
-
+        category = should be one of the options defined in parser class
         """
 
         time_dictionary = {
-            "morning" : [5, 12],
-            "afternoon": [12, 17],
-            "evening": [17, 21],
-            "night": [21, 5]
+            "morning" : [i for i in range(5, 12)],
+            "afternoon": [i for i in range(12, 18)],
+            "evening": [i for i in range(18, 21)],
+            "night": [i for i in range(21, 25)] + [i for i in range(1, 5)]
         }
 
-        clauses_list = []
-        params_list = []
-
-        video_type_query = "video_type = %s"
-        time_query = "HOUR(time_stamp) >= %s AND HOUR(time_stamp) < %s"
-        night_time_query = "HOUR(time_stamp) >= %s OR HOUR(time_stamp) < %s"
-        lower_range_query = "time_stamp >= %s"
-        upper_range_query = "time_stamp <= %s"
-
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
         if video_type:
-            clauses_list.append(video_type_query)
-            params_list.append(video_type)
+            df = df[df['video_type'] == video_type]
 
         if time:
-            if time != "night":
-                clauses_list.append(time_query)
-            else:
-                clauses_list.append(night_time_query)
+            df['hour'] = df['time_stamp'].dt.hour
+            df['time'] =   np.where(df['hour'].isin(time_dictionary['afternoon']), 'afternoon',
+                            np.where(df['hour'].isin(time_dictionary['morning']), 'morning',
+                            np.where(df['hour'].isin(time_dictionary['evening']), 'evening', 'night')))
+            df = df[df['time'] == time]
 
-            params_list.extend(time_dictionary[time])
+        if category:
+            df = df[df['video_category'] == category]
 
-        if lower_range:
-            clauses_list.append(lower_range_query)
-            params_list.append(lower_range)
-
-        if upper_range:
-            clauses_list.append(upper_range_query)
-            params_list.append(upper_range)
-
-        condition_clause = ""
-        if len(clauses_list) != 0:
-            condition_clause+= " WHERE "
-
-        main_query = """
-            SELECT video_type, COUNT(*) AS count
-            FROM watch_history
-        """ + condition_clause + " AND ".join(clauses_list) +  " GROUP BY video_type"
-
-        self.cursor.execute(main_query, params_list)
-
-        df = pd.DataFrame(self.cursor.fetchall(), columns=['Video Type', 'Total Count'])
-
-        return df
-
-
+        return df.sort_values('time_stamp').drop(columns = ['hour', 'historyID', 'time_stamp']).reset_index(drop = True).head(20)
     def last_day(self):
         """
         Finds the last recorded day
@@ -594,20 +571,7 @@ class QueryProcessor:
         Calculation: number of days since the last video was watched * the total number videos watched by a channel
         """
 
-        time_query = ""
-        params = []
-
-        if lower_range and not upper_range:
-            time_query = " WHERE time_stamp >= %s "
-            params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " WHERE time_stamp <= %s "
-            params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
-            params = [lower_range, upper_range]
+        time_query , params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         custom_table = f"""
             SELECT COUNT(*) AS total_count, 
@@ -628,12 +592,11 @@ class QueryProcessor:
             DATEDIFF(NOW(), last_watch) * total_count AS neglect_score
             FROM ({custom_table}) AS custom
             ORDER BY neglect_score DESC
-            LIMIT 10
         """
 
         self.cursor.execute(sql, params)
-        output = self.cursor.fetchall()
-        return output if output else None
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Channel Name', 'Channel URL', 'Total Watch', 'Since Last Watched', 'Neglect Score'])
+        return None if df.empty else df
 
     def random_day_discovery(self):
         """
@@ -641,7 +604,6 @@ class QueryProcessor:
         """
         self.cursor.execute("SELECT DISTINCT DATE(time_stamp) AS d FROM watch_history ORDER BY RAND() LIMIT 1")
         random_date = self.cursor.fetchone()[0]
-        print(random_date)
 
         sql = """
             SELECT video_name, video_url, video_type, video_category, time_stamp
@@ -650,8 +612,8 @@ class QueryProcessor:
             ORDER BY time_stamp ASC
         """
         self.cursor.execute(sql, (random_date, random_date))
-        itinerary = self.cursor.fetchall()
-        return itinerary
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Name', 'URL', 'Type', 'Category', 'Timestamp'])
+        return df
 
     def the_longest_titled_video(self, video_type=None, video_limit=10):
         """
@@ -663,6 +625,6 @@ class QueryProcessor:
 
         sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {video_limit} "
         self.cursor.execute(sql)
-        output = self.cursor.fetchall()
-        return output if output else None
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Name', 'URL', 'Type', 'Title Length'])
+        return df
 
