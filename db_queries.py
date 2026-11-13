@@ -154,7 +154,7 @@ class QueryProcessor:
         return df
 
 
-    def the_busiest_day(self, lower_range=None, upper_range=None, limit=None):
+    def the_busiest_day(self, lower_range=None, upper_range=None):
         """
         Finds the busiest days recorded
         """
