@@ -11,6 +11,7 @@ Needs to be divided into separate files.
 Some of the funcs can be combines and better explained
 Needs to finish the rest of the query funcs to start the front-end work
 """
+
 class QueryProcessor:
 
     """
@@ -80,7 +81,7 @@ class QueryProcessor:
 
     def most_watched_channel_per_month(self, lower_range = None, upper_range = None):
 
-        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select month, channel_name, total_watched
@@ -109,7 +110,7 @@ class QueryProcessor:
         """
         Finds the most watched videos (top 20)
         """
-        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
 
         sql = f"SELECT video_name, video_url, COUNT(*) AS count FROM watch_history {time_query} GROUP BY video_name, video_url ORDER BY count DESC LIMIT 20"
@@ -122,7 +123,7 @@ class QueryProcessor:
 
     def the_most_repeated_words(self, lower_range = None, upper_range = None):
 
-        df= self.date_rage_handler(lower_range, upper_range, as_dataframe=True).drop_duplicates(subset='video_name')
+        df= self.date_range_handler(lower_range, upper_range, as_dataframe=True).drop_duplicates(subset='video_name')
 
         df['video_name'] = df['video_name'].str.strip().str.lower().str.split().to_list()
         df = df.explode('video_name')
@@ -141,7 +142,7 @@ class QueryProcessor:
         """
         Finds videos by the combination of words instead of full description
         """
-        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         words = sentence.split()
 
@@ -159,7 +160,7 @@ class QueryProcessor:
         Finds the busiest days recorded
         """
 
-        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select
@@ -406,7 +407,7 @@ class QueryProcessor:
         Finds start and end of the week where the user watched the most (depending on video type)
         """
 
-        df = self.date_rage_handler(lower_range, upper_range, as_dataframe=True)
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
         df['time_stamp'] = df['time_stamp'].dt.normalize()
 
         df['first_day'] = df['time_stamp'] - df['time_stamp'].dt.weekday * pd.Timedelta(days=1)
@@ -423,7 +424,7 @@ class QueryProcessor:
     def max_time_of_the_day(self, lower_range=None, upper_range=None, video_type=None):
         """Finds the time of the day where the most videos/reel are watched"""
 
-        df = self.date_rage_handler(lower_range, upper_range, as_dataframe=True)
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
         if video_type:
             df = df[df['video_type'] == video_type]
 
@@ -434,7 +435,7 @@ class QueryProcessor:
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
         # average number of videos, reels, category, can find top categories of each
 
-        time_query , params  = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query , params  = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
 
         sql_define_days = f"""
@@ -471,7 +472,7 @@ class QueryProcessor:
 
     def streak_analysis(self, lower_range=None, upper_range=None):
 
-        time_query , params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query , params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             SELECT
@@ -497,7 +498,7 @@ class QueryProcessor:
         return df
 
     def video_length_preference(self, lower_range=None, upper_range=None):
-        time_query , params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query , params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select
@@ -534,7 +535,7 @@ class QueryProcessor:
 
     def unavailable_videos(self, category_type=None, lower_range=None, upper_range=None):
 
-        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
+        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select
@@ -627,4 +628,5 @@ class QueryProcessor:
         self.cursor.execute(sql)
         df = pd.DataFrame(self.cursor.fetchall(), columns=['Name', 'URL', 'Type', 'Title Length'])
         return df
+
 
