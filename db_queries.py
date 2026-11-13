@@ -5,7 +5,7 @@ import re
 from datetime import timedelta, datetime
 import pandas as pd 
 from typing import Literal
-
+import numpy as np
 """
 Needs to be divided into separate files.
 Some of the funcs can be combines and better explained
@@ -29,11 +29,11 @@ class QueryProcessor:
         self.cursor = connection.cursor
 
         self.stop_words = set(stopwords.words('english'))
-        self.season_month_map = {
-            "winter": [12, 1, 2],
-            "spring": [3, 4, 5],
-            "summer": [6, 7, 8],
-            "autumn": [9, 10, 11]
+        self.quarter_month_map = {
+            1: [1, 2, 3],
+            2: [4, 5, 6],
+            3: [7, 8, 9],
+            4: [10, 11, 12]
         }
 
 
@@ -297,50 +297,72 @@ class QueryProcessor:
 
         return df
 
-    def weekly_trend(self, video_type:Literal["reel", "video", "unavailable"] = None):
-        # needs to be cleaned
-        # try year-month and find the max, after that find the weeks they belong in, then for each show
-        pass
-    def monthly_trend(self, month_back=None, video_type=None):
-        # find the latest year
+    def weekly_trend(self, video_type:Literal["reel", "video", "unavailable"] = None, week_limit = 4):
+
+        df = self.table.copy()
+        last_day = df['time_stamp'].max()
+        last_week_start = last_day.normalize() - pd.Timedelta(days=last_day.weekday())
+        first_week_start = last_week_start - pd.Timedelta(weeks=week_limit - 1)
+
+        df = df[df['time_stamp'] >= first_week_start].copy().assign(time_stamp =  df['time_stamp'].dt.normalize())
+        bins = pd.date_range(first_week_start, periods=week_limit + 1, freq='7D')
+
+        labels = [i + 1 for i in range(week_limit)]
+        df['week'] = pd.cut(df['time_stamp'], bins=bins, right=False, labels=labels)
+
+        if video_type:
+            df[df['video_type'] == video_type]
+
+        return  df.groupby('week', as_index = False)\
+                .agg(first_day = ('time_stamp', 'min'), last_day =  ('time_stamp', 'max'), size = ('historyID', 'nunique'))\
+                .rename(columns = {'first_day' : 'First Day', 'last_day' : 'Last Day', 'size' : 'Total Count'})\
+
+
+    def monthly_trend(self, year_choice = None, video_type:Literal["reel", "video", "unavailable"] = None):
         """
         Should show this month's breakdown of watch by weeks
         """
+        df = self.table.copy()
+        df = df.assign(year = df['time_stamp'].dt.year, month = df['time_stamp'].dt.month)
 
-        sql = "SELECT DATE(time_stamp) FROM watch_history WHERE "
-        pass
+        if year_choice is None:
+            year_choice = df['year'].max()
 
-    def seasonal_trend(self, year_back=None, season_specify=None, video_type=None):
+        df = df[df['year'] >= year_choice -  1]
+
+        if video_type:
+            df = df[df['video_type'] == video_type]
+
+        df = df.groupby(['year', 'month'], as_index = False).size().sort_values(['year', 'month'])
+        df['cpc'] = ((df['size'] * 100 / df['size'].shift().fillna(df['size'])) - 100).round(2)
+        return df[df['year'] == year_choice].reset_index(drop = True)
+
+    def seasonal_trend(self, year_choice=None, video_type:Literal["reel", "video", "unavailable"] = None):
         """
         Finds the trend of view by the seasons
+        Change is calculated based on diff between prev season
         """
-        if year_back is None:
-            year_back = self.last_year()
 
-        if season_specify is None:
-            season_specify = list(self.season_month_map.keys())
-        else:
-            season_specify = [season_specify]
+        df = self.table.copy()
 
-        season_dict = {}
-        for s in season_specify:
-            month_count = 0
-            for m in self.season_month_map[s]:
-                params = [year_back, m]
+        if year_choice is None:
+            year_choice = df['time_stamp'].dt.year.max()
 
-                additional_sql = ""
-                if video_type:
-                    additional_sql = " AND video_type = %s"
-                    params.append(video_type)
+        df = df.assign(year = df['time_stamp'].dt.year, month = df['time_stamp'].dt.month)
 
-                sql = "SELECT COUNT(*) FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s" + additional_sql
-                self.cursor.execute(sql, params)
-                output = self.cursor.fetchone()[0]
-                month_count+=output
+        df['quarter'] =  np.where(df['month'].isin(self.quarter_month_map[1]), 1,
+                        np.where(df['month'].isin(self.quarter_month_map[2]), 2,
+                        np.where(df['month'].isin(self.quarter_month_map[3]), 3, 4)))
 
-            season_dict[s] = month_count
+        if video_type:
+            df = df[df['video_type'] == video_type]
 
-        return season_dict
+        result =  df.groupby(['year', 'quarter'], as_index=False).size().sort_values(["year", "quarter"])
+        result['cpc'] = ((result['size'] * 100 / result['size'].shift().fillna(result['size'])) - 100).round(2)
+
+        result =  result[result['year'] == year_choice].rename(columns = {'size': 'Total Count', 'cpc' : 'Change (Percentage%)'}).reset_index(drop=True)
+
+        return None if result.empty else result
 
     def last_year(self):
         """
@@ -351,26 +373,15 @@ class QueryProcessor:
         last_year = self.cursor.fetchone()[0]
         return last_year
 
+    def yearly_trend(self, video_type=None):
+        df = self.table.copy()
 
-    def yearly_trend(self, year_back=None, video_type=None):
-        if year_back is None:
-            year_back = self.last_year()
+        if video_type:
+            df = df[df['video_type'] == video_type]
 
-        result_list = []
-        for i in range(1, 13):
-            params = [year_back,  i]
-
-            add_sql = ""
-            if video_type:
-                add_sql = " AND video_type = %s"
-                params.append(video_type)
-
-            sql = "SELECT COUNT(*) FROM watch_history WHERE YEAR(time_stamp) = %s AND MONTH(time_stamp) = %s" + add_sql
-            self.cursor.execute(sql, params)
-            output = self.cursor.fetchone()
-            result_list.append(output)
-
-        return result_list
+        result = df.assign(year = df['time_stamp'].dt.year).groupby('year', as_index = False).size().sort_values('year')
+        result['Change (Percentage %)'] = ((result['size'] / result['size'].shift().fillna(result['size']) * 100 ) - 100).round(2)
+        return result.rename(columns = {'size' : 'Total Count'})
 
     def channel_life_cycle(self, channel):
 
@@ -399,11 +410,10 @@ class QueryProcessor:
 
         sql = "SELECT DISTINCT video_category, COUNT(*)  FROM watch_history WHERE YEAR(time_stamp) = %s" + month_query + type_sql + " GROUP BY video_category ORDER BY COUNT(*) DESC "
         self.cursor.execute(sql, params)
-        output = self.cursor.fetchall()
 
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Video Category', 'Total Count'])
 
-        [category[1] for category in output]
-        return output
+        return df
 
     def number_of_unique_channels_watched_month(self, year, month):
         """
@@ -414,93 +424,41 @@ class QueryProcessor:
         output = self.cursor.fetchall()
         return output
 
-    def max_day_of_the_week(self, lower_range=None, upper_range=None, video_type=None):
+    def most_watched_week(self, lower_range=None, upper_range=None, video_type=None):
         """
-        Finds the day of the week where the most videos/reel are watched
+        Finds start and end of the week where the user watched the most (depending on video type)
         """
 
-        time_query = ""
-        add_params = []
+        df = self.date_rage_handler(lower_range, upper_range, as_dataframe=True)
+        df['time_stamp'] = df['time_stamp'].dt.normalize()
 
-        if lower_range and not upper_range:
-            time_query = " AND time_stamp >= %s "
-            add_params = [lower_range]
+        df['first_day'] = df['time_stamp'] - df['time_stamp'].dt.weekday * pd.Timedelta(days=1)
+        df['last_day'] = df['first_day'] + pd.Timedelta(days=6)
 
-        if not lower_range and upper_range:
-            time_query = " AND time_stamp <= %s "
-            add_params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
-            add_params = [lower_range, upper_range]
-
-        type_sql = ""
         if video_type:
-            type_sql = " AND video_type = %s"
-            add_params.append(video_type)
+            df = df[df['video_type'] == video_type]
 
-        week_day_dict = {}
-        for i in range(0, 7):
-            params = [i]
-            sql = "SELECT COUNT(*) FROM watch_history WHERE WEEKDAY(time_stamp) = %s" + time_query + type_sql
-            params.extend(add_params)
-            self.cursor.execute(sql, params)
-            output = self.cursor.fetchone()
-            week_day_dict[i+1] = output
+        result = df.groupby(['first_day', 'last_day'], as_index=False).size()\
+                    .sort_values('size', ascending=False).rename(columns = {'size' : 'Total Count'}).reset_index(drop = True)
 
-        return max(week_day_dict.items(), key=lambda x: x[1])
+        return result
 
     def max_time_of_the_day(self, lower_range=None, upper_range=None, video_type=None):
         """Finds the time of the day where the most videos/reel are watched"""
 
-        time_query = ""
-        add_params = []
-
-        if lower_range and not upper_range:
-            time_query = " AND time_stamp >= %s "
-            add_params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " AND time_stamp <= %s "
-            add_params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " AND time_stamp >= %s AND time_stamp <= %s "
-            add_params = [lower_range, upper_range]
-
-        type_sql = ""
+        df = self.date_rage_handler(lower_range, upper_range, as_dataframe=True)
         if video_type:
-            type_sql = " AND video_type = %s"
-            add_params.append(video_type)
+            df = df[df['video_type'] == video_type]
 
-        time_day_dict = {}
-
-        for i in range(0, 24):
-            params = [i]
-            sql = "SELECT COUNT(*) FROM watch_history WHERE HOUR(time_stamp) = %s" + time_query + type_sql
-            params.extend(add_params)
-            self.cursor.execute(sql, params)
-            output = self.cursor.fetchone()
-            time_day_dict[i] = output
-        return max(time_day_dict.items(),  key=lambda x: x[1])
+        result = df.assign(hour = df['time_stamp'].dt.hour).groupby('hour', as_index = False).size()\
+                .sort_values('size', ascending=False).rename(columns={'size' : 'Total Count'}).reset_index(drop = True)
+        return result
 
     def weekday_vs_weekend(self, lower_range=None, upper_range=None):
         # average number of videos, reels, category, can find top categories of each
 
-        time_query = ""
-        params = []
+        time_query , params  = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
-        if lower_range and not upper_range:
-            time_query = " WHERE time_stamp >= %s "
-            params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " WHERE time_stamp <= %s "
-            params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
-            params = [lower_range, upper_range]
 
         sql_define_days = f"""
             select
@@ -528,28 +486,15 @@ class QueryProcessor:
         """
 
         self.cursor.execute(sql_define_days, params)
-        day_type_averages = self.cursor.fetchall()
-        return day_type_averages
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Video Type', 'Weekday Average', 'Weekend Average'])
+        return df
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
 
     def streak_analysis(self, lower_range=None, upper_range=None):
 
-        time_query = ""
-        params = []
-
-        if lower_range and not upper_range:
-            time_query = " WHERE time_stamp >= %s "
-            params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " WHERE time_stamp <= %s "
-            params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
-            params = [lower_range, upper_range]
+        time_query , params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             SELECT
@@ -571,24 +516,11 @@ class QueryProcessor:
         """
 
         self.cursor.execute(sql, params)
-        steak_length = self.cursor.fetchall()
-        return steak_length
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Streak Start', 'Streak End', 'Total Count'])
+        return df
 
     def video_length_preference(self, lower_range=None, upper_range=None):
-        time_query = ""
-        params = []
-
-        if lower_range and not upper_range:
-            time_query = " WHERE time_stamp >= %s "
-            params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " WHERE time_stamp <= %s "
-            params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
-            params = [lower_range, upper_range]
+        time_query , params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select
@@ -601,8 +533,8 @@ class QueryProcessor:
         """
 
         self.cursor.execute(sql, params)
-        video_pref = self.cursor.fetchall()
-        return video_pref
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Video Type', 'Total Count'])
+        return df
 
     def video_length_trend_over_month(self):
 
@@ -617,25 +549,15 @@ class QueryProcessor:
             order by month
         """
 
-        pivoted = pd.pivot_table(self.table, index='video_type', columns='month', values='video_type_month_total')
+        self.cursor.execute(sql)
+        df = pd.DataFrame(self.cursor.fetchall(), columns=['Month', 'Video Type', 'Month Total'])
+
+        pivoted = pd.pivot_table(df, index='Video Type', columns='Month', values='Month Total')
         return pivoted
 
     def unavailable_videos(self, category_type=None, lower_range=None, upper_range=None):
 
-        time_query = ""
-        params = []
-
-        if lower_range and not upper_range:
-            time_query = " WHERE time_stamp >= %s "
-            params = [lower_range]
-
-        if not lower_range and upper_range:
-            time_query = " WHERE time_stamp <= %s "
-            params = [upper_range]
-
-        if lower_range and upper_range:
-            time_query = " WHERE time_stamp >= %s AND time_stamp <= %s "
-            params = [lower_range, upper_range]
+        time_query, params = self.date_rage_handler(lower_range, upper_range, as_dataframe=False)
 
         sql = f"""
             select
