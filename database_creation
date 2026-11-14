@@ -1,0 +1,47 @@
+# MySQL version of database
+
+CREATE DATABASE IF NOT EXISTS youtube_database;
+USE youtube_database;
+
+CREATE TABLE IF NOT EXISTS watch_history (
+                                            historyID    INT AUTO_INCREMENT PRIMARY KEY,
+                                            video_url VARCHAR(255) NOT NULL,
+                                            video_name      VARCHAR(255) NOT NULL,
+                                            video_type VARCHAR(255) NOT NULL,
+                                            video_category VARCHAR(255) NOT NULL,
+                                            channel_url         VARCHAR(255) NOT NULL,
+                                            channel_name        VARCHAR(255) NOT NULL,
+                                            time_stamp          DATETIME,
+                                            INDEX video_index (video_name),
+                                            INDEX channel_date_index (channel_name, time_stamp)
+
+
+);
+
+ALTER TABLE watch_history
+ADD UNIQUE KEY uq_video_time (video_url, time_stamp);
+
+#---------------------------------------------------------------------------------------------------------------------
+
+# Translated to duckDB here
+# use this for creating auto increment primary key 
+
+
+CREATE SEQUENCE seq_historyID START 1;
+
+CREATE INDEX video_index ON watch_history (video_name);
+CREATE INDEX channel_date_index ON watch_history (channel_name, time_stamp);
+
+
+CREATE TABLE watch_history (
+        historyID  INTEGER  PRIMARY KEY DEFAULT nextval('seq_historyID'),
+        video_url VARCHAR(255) NOT NULL,
+        video_name      VARCHAR(255) NOT NULL,
+        video_type VARCHAR(255) NOT NULL,
+        video_category VARCHAR(255) NOT NULL,
+        channel_url         VARCHAR(255) NOT NULL,
+        channel_name        VARCHAR(255) NOT NULL,
+        time_stamp          DATETIME,
+        UNIQUE (video_url, time_stamp)
+);
+
