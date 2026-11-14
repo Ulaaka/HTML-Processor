@@ -573,7 +573,7 @@ class QueryProcessorDuck:
         """
 
         df = self.con.execute(sql, params).df()\
-            .rename(columns = {'channel_name': 'Channel Name', 'channel_url' : 'URL', 'total_count' : 'Total Watch', 'days_since_last' : 'ince Last Watched', 'neglect_score' : 'Neglect Score'})
+            .rename(columns = {'channel_name': 'Channel Name', 'channel_url' : 'URL', 'total_count' : 'Total Watch', 'days_since_last' : 'Since Last Watched', 'neglect_score' : 'Neglect Score'})
         return df
 
     def random_day_discovery(self):
@@ -602,6 +602,5 @@ class QueryProcessorDuck:
             where_query = f" WHERE video_type = {video_type} "
 
         sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {video_limit} "
-        self.cursor.execute(sql)
-        df = pd.DataFrame(self.cursor.fetchall(), columns=['Name', 'URL', 'Type', 'Title Length'])
+        df = self.con.execute(sql).df().rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'length_video' : 'Title Length'})
         return df
