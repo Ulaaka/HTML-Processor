@@ -1,13 +1,4 @@
-/* ==========================================================================
-   Watch History dashboard — assets/style.css (Dash loads it automatically)
-   1 Tokens · 2 Layout · 3 Sidebar · 4 Controls · 5 KPI cards · 6 Output · 7 Responsive
 
-   Light/dark: app.py sets data-bs-theme="light|dark" on <html>. Bootstrap's --bs-*
-   variables change with it, and the tokens below point at them, so nothing here
-   needs a separate dark block. To pin a colour, replace a var(--bs-…) with a hex.
-   ========================================================================== */
-
-/* 1. TOKENS ---------------------------------------------------------------- */
 :root {
   --sidebar-width: 16rem;
   --sidebar-bg: var(--bs-tertiary-bg);
@@ -22,7 +13,6 @@
   --space: 1.25rem;
 }
 
-/* 2. LAYOUT — fixed sidebar on the left, content pushed right -------------- */
 .sidebar {
   position: fixed;
   top: 0;
@@ -31,7 +21,7 @@
   width: var(--sidebar-width);
   padding: 2rem 1rem;
   background-color: var(--sidebar-bg);
-  overflow-y: auto;            /* long link list scrolls inside the sidebar */
+  overflow-y: auto;           
 }
 
 .content {
@@ -40,7 +30,6 @@
   padding: 2rem 1rem;
 }
 
-/* 3. SIDEBAR — theme switch, collapsible groups, links --------------------- */
 .theme-switch { margin-bottom: 0; }
 
 .nav-group { margin-bottom: 0.5rem; }
@@ -52,23 +41,19 @@
 .nav-group .nav-link { padding: 0.3rem 0.75rem; font-size: 0.92rem; color: var(--text); }
 .nav-group .nav-link:hover:not(.active) { background-color: var(--border); }
 
-/* 4. CONTROLS — the toggles above each chart ------------------------------- */
 .controls { margin-bottom: var(--space); }
 .control .form-label { margin-bottom: 0.25rem; font-size: 0.85rem; color: var(--muted); }
 .control .btn { width: 100%; }
 
-/* 5. KPI CARDS ------------------------------------------------------------- */
 .kpis { margin-bottom: var(--space); }
 .kpi { background: var(--sidebar-bg); border-color: var(--border); border-radius: var(--radius); }
 .kpi-value { font-size: 1.5rem; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
 .kpi-label { font-size: 0.85rem; color: var(--muted); }
 
-/* 6. OUTPUT — chart area and the "Show data" drawer ------------------------ */
 .out { min-height: 6rem; }
 .data-accordion { margin-top: 0.5rem; }
 .data-accordion .accordion-button { font-size: 0.9rem; color: var(--muted); background: transparent; box-shadow: none; }
 
-/* 7. RESPONSIVE — on phones the sidebar stacks above the content ----------- */
 @media (max-width: 768px) {
   .sidebar { position: static; width: auto; }
   .content { margin: 0; padding: 1rem; }

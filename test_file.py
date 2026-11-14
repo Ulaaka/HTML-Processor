@@ -209,7 +209,6 @@ ANALYSES = [
 SPECS = {s["key"]: s for s in ANALYSES}
 PAGES = {c["path"]: c for c in CATEGORIES}
 
-# ──────────────────────────────────────────────────────────────── 6. UI ──
 def cid(spec, c):
     return f"{spec['key']}-{c['arg'] or 'btn'}"
 
@@ -273,7 +272,6 @@ def render(spec, df):
         out.append(table(df))
     return out
 
-# ─────────────────────────────────────────────────────────────── 7. APP ──
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True,
            title="Watch History")
 
@@ -307,20 +305,20 @@ def register(spec):
             raise PreventUpdate
         kwargs = {}
         for c, v in zip(spec["controls"], values):
-            if c["arg"] is None:                      # button: only triggers a re-run
+            if c["arg"] is None:                      
                 continue
             if v in ("", None):
                 v = None
             elif c.get("cast"):
                 v = c["cast"](v)
-            elif c["arg"] == "upper_range":           # include the whole last day
+            elif c["arg"] == "upper_range":          
                 v = f"{v} 23:59:59"
             kwargs[c["arg"]] = v
         if spec.get("need") and not kwargs.get(spec["need"]):
             return dbc.Alert(f"Fill in “{spec['need']}” to see results.", color="light")
         try:
             return render(spec, getattr(query, spec["fn"])(**kwargs))
-        except Exception as e:                        # show the problem instead of a blank page
+        except Exception as e:                      
             return dbc.Alert(f"{spec['fn']} failed: {type(e).__name__}: {e}", color="danger")
 
 
