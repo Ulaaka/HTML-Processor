@@ -1,5 +1,3 @@
 Plan - >
-- change to duckdb, (save as a file for testing)
-- for this size, pandas or polars wot make a diff , but after finishing can  reate another replicate in polars
-- use dash plotly for the frontend
--lightweight, data centered app
+- need to standardise the query funcs, group them into categories so it will be easier to know what custom filter i should implement.
+- do some basic dashboard with dash, use plotly as its native to it.

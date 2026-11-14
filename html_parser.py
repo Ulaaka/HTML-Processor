@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from db_queries import QueryProcessor
 from requests import Requests
 import dateutil.parser, concurrent.futures, asyncio, os, re
 
@@ -11,18 +10,18 @@ class HTML_Parser:
 
         self.category_mapping = {
             '1': 'Film & Animation', 
-            '2': 'Autos & Vehicles', 
-            '10': 'Music', 
-            '15': 'Pets & Animals', 
-            '17': 'Sports', 
-            '18': 'Short Movies', 
-            '19': 'Travel & Events', 
-            '20': 'Gaming', 
-            '21': 'Videoblogging', 
-            '22': 'People & Blogs', 
-            '23': 'Comedy', 
-            '24': 'Entertainment', 
-            '25': 'News & Politics', 
+            '2': 'Autos & Vehicles',
+            '10': 'Music',
+            '15': 'Pets & Animals',
+            '17': 'Sports',
+            '18': 'Short Movies',
+            '19': 'Travel & Events',
+            '20': 'Gaming',
+            '21': 'Videoblogging',
+            '22': 'People & Blogs',
+            '23': 'Comedy',
+            '24': 'Entertainment',
+            '25': 'News & Politics',
             '26': 'Howto & Style', 
             '27': 'Education', 
             '28': 'Science & Technology',
@@ -70,7 +69,6 @@ class HTML_Parser:
         return html_content
 
     def html_parser(self):
-        query = QueryProcessor()
         request = Requests()
         general_list = []
         matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
@@ -152,7 +150,7 @@ class HTML_Parser:
 
     def category_mapper(self, categoryID):
         """
-        Maps the category id of video to its description
+        Maps the category id of video to its descriptiosn
 
         input: category ID
         param: mapped description
@@ -166,6 +164,6 @@ class HTML_Parser:
     def html_chunker(self, size = 1000000):
         # total size is 46230891
         chunk = str(self.soup)[: size]
-        with open(os.path.join("data_folder", "small_chunk.html"), "w", encoding="utf-8") as f:
+        with open(os.path.join("data_folder", "watch-history.html"), "w", encoding="utf-8") as f:
             f.write(chunk)
 

@@ -135,6 +135,7 @@ class QueryProcessor:
                 .rename(columns = {'video_name' : 'Word', 'size' : 'Total Count'})\
                 .reset_index(drop=True)
 
+
         return result.head(20)
 
 
