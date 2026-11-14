@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from db_queries import QueryProcessor
 from requests import Requests
 import dateutil.parser, concurrent.futures, asyncio, os, re
 
@@ -70,7 +69,6 @@ class HTML_Parser:
         return html_content
 
     def html_parser(self):
-        query = QueryProcessor()
         request = Requests()
         general_list = []
         matches = list(self.soup.find_all("div", class_="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"))
