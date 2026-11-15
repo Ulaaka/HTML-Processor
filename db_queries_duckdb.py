@@ -42,19 +42,21 @@ class QueryProcessorDuck:
         self.con.executemany(sql, history_list)
  
     def date_range_handler(self, lower_range=None, upper_range=None, as_dataframe=False):
-        time_query = ""
+        conditions = []
         params = []
 
         if lower_range:
-            time_query += " AND time_stamp >= %s"
+            conditions.append("time_stamp >= ?")
             params.append(lower_range)
 
         if upper_range:
-            time_query += " AND time_stamp <= %s"
+            conditions.append("time_stamp <= ?")
             params.append(upper_range)
 
+        time_query = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
         if as_dataframe:
-            query = "SELECT * FROM watch_history WHERE 1=1" + time_query
+            query = "SELECT * FROM watch_history " + time_query
             return self.con.execute(query, params).df()
 
         return time_query, params
@@ -94,17 +96,18 @@ class QueryProcessorDuck:
         df =  self.con.execute(sql, params).df().rename(columns = {'month' : 'Year - Month', 'channel_name' : 'Channel Name', 'total_watched' : 'Total Watch'})
         return df
 
-    def the_most_watched_videos(self, lower_range = None, upper_range = None):
+    def the_most_watched_videos(self, video_type:Literal["reel", "video", "unavailable"] = None, lower_range = None, upper_range = None):
         """
         Finds the most watched videos (top 20)
         """
-        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
 
+        if video_type:
+            df = df[df['video_type'] == video_type]
 
-        sql = f"SELECT video_name, video_url, COUNT(*) AS count FROM watch_history {time_query} GROUP BY video_name, video_url ORDER BY count DESC LIMIT 20"
-        df = self.con.execute(sql, params).df().rename(columns={'video_name' : 'Video Name', 'video_url' : 'URL', 'count' : 'Total Watch'})
+        df = df.groupby(['video_name', 'video_url'], as_index = False).size().sort_values("size", ascending = False).rename(columns = {'video_name' : 'Video Name', 'video_url' : 'URL', 'size' : 'Total Watch'})
 
-        return df
+        return df.head(20)
 
 
     def the_most_repeated_words(self, lower_range = None, upper_range = None):
