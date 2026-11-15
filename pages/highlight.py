@@ -37,6 +37,7 @@ dash.register_page(
     redirect_from=["/highlight", "/highlight/"],
 )
 
+
 def layout(topic=None, **other_unknown_query_strings):
     parent_card =  dbc.Card(" Here is the main Highlight Page content", body=True)
 
