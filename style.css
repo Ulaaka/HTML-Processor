@@ -21,7 +21,7 @@
   width: var(--sidebar-width);
   padding: 2rem 1rem;
   background-color: var(--sidebar-bg);
-  overflow-y: auto;           
+  overflow-y: auto;
 }
 
 .content {
@@ -38,6 +38,7 @@
   font-weight: 600;
   cursor: pointer;
 }
+
 .nav-group .nav-link { padding: 0.3rem 0.75rem; font-size: 0.92rem; color: var(--text); }
 .nav-group .nav-link:hover:not(.active) { background-color: var(--border); }
 
