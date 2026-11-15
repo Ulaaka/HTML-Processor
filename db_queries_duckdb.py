@@ -527,23 +527,21 @@ class QueryProcessorDuck:
         df = df[df['video_type'] == 'unavailable'].reset_index(drop = True)
         return df
 
-    def first_video_ever_watched(self, video_limit=1):
+    def first_last_videos_ever_watched(self, video_limit=1, video_type:Literal["reel", "video", "unavailable"] = None, first_or_last = True):
         """
         Finds the first ever video watched
         """
-        sql = f"SELECT video_name, video_url, video_type, video_category, time_stamp FROM watch_history ORDER BY time_stamp ASC LIMIT {video_limit} "
-        df = self.con.execute(sql).df()\
-                .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'video_type' : 'Type', 'video_category' : 'Category', 'time_stamp' : 'Timestamp'})
-        return df
 
-    def last_videos_ever_watched(self, video_limit=1):
-        """
-        Finds the last video watched
-        """
-        sql = f"SELECT video_name, video_url, video_type, video_category, time_stamp FROM watch_history ORDER BY time_stamp DESC LIMIT {video_limit} "
-        df = self.con.execute(sql).df()\
+        df = self.table.copy()
+        if video_type:
+            df = df[df['video_type'] == video_type]
+
+        df = df.sort_values("time_stamp", ascending = first_or_last)[['video_name', 'video_url', 'video_type', 'video_category', 'time_stamp']]\
                 .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'video_type' : 'Type', 'video_category' : 'Category', 'time_stamp' : 'Timestamp'})
-        return df
+
+        df.index = np.arange(1, len(df) + 1)
+
+        return df.reset_index().head(video_limit)
 
     def the_longest_untouched_channel(self, lower_range=None, upper_range=None):
         """
@@ -594,7 +592,9 @@ class QueryProcessorDuck:
         """
         df = self.con.execute(sql, (random_date, random_date)).df()\
             .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'video_type' : 'Type', 'time_stamp' : 'Timestamp'})
-        return df
+        df.index = np.arange(1, len(df) + 1)
+
+        return df.reset_index()
 
     def the_longest_titled_video(self, video_type=None, video_limit=10):
         """
@@ -606,4 +606,6 @@ class QueryProcessorDuck:
 
         sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {video_limit} "
         df = self.con.execute(sql).df().rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'length_video' : 'Title Length'})
-        return df
+
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index().head(video_limit)

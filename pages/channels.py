@@ -36,9 +36,8 @@ dash.register_page(
     redirect_from=["/channels", "/channels/"],
 )
 
-
 def layout(topic=None, **other_unknown_query_strings):
-    parent_card =  dbc.Card(" Here is the main Highlight Page content", body=True)
+    parent_card =  dbc.Card(" Here is the main Channels Page content", body=True)
 
     if topic == "most_watched":
         topic_card =  most_watched_layout()

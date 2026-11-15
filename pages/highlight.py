@@ -44,11 +44,11 @@ def layout(topic=None, **other_unknown_query_strings):
     if topic == "first_watched":
         topic_card =  first_watched_layout()
     elif topic == "last_watched":
-        topic_card =  last_watched_layout
+        topic_card =  last_watched_layout()
     elif topic == "random_day":
-        topic_card =  random_day_layout
+        topic_card =  random_day_layout()
     elif topic == "longest_titles":
-        topic_card =  longest_titles_layout
+        topic_card =  longest_titles_layout()
     else:
         topic_card= ""
 
