@@ -50,15 +50,15 @@ def layout(topic=None, **other_unknown_query_strings):
     if topic == "day_trend":
         topic_card =  day_trend_layout()
     elif topic == "weeks_trend":
-        topic_card =  weeks_trend_layout
+        topic_card =  weeks_trend_layout()
     elif topic == "months_trend":
-        topic_card =  months_trend_layout
+        topic_card =  months_trend_layout()
     elif topic == "quarters_trend":
-        topic_card =  quarters_trend_layout
+        topic_card =  quarters_trend_layout()
     elif topic == "years_trend":
-        topic_card =  years_trend_layout
+        topic_card =  years_trend_layout()
     elif topic == "time_day":
-        topic_card =  time_day_layout
+        topic_card =  time_day_layout()
     else:
         topic_card= ""
 

@@ -1,3 +1,4 @@
 import dash_bootstrap_components as dbc
 
-unavailable_layout = dbc.Card("Unavailable Content", body=True, className="mt-2")
+def unavailable_layout():
+    return dbc.Card("Unavailable Content", body=True, className="mt-2")

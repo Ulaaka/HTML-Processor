@@ -1,3 +1,4 @@
 import dash_bootstrap_components as dbc
 
-search_titles_layout = dbc.Card("Search Titles", body=True, className="mt-2")
+def search_titles_layout():
+    return  dbc.Card("Search Titles", body=True, className="mt-2")

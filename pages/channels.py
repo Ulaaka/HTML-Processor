@@ -44,7 +44,7 @@ def layout(topic=None, **other_unknown_query_strings):
     elif topic == "channel_month":
         topic_card =  channel_month_layout()
     elif topic == "latest_month":
-        topic_card =  latest_month_layout
+        topic_card =  latest_month_layout()
     elif topic == "forgotten_favorites":
         topic_card =  forgotten_favorites_layout()
     else:

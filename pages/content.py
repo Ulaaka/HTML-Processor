@@ -54,17 +54,17 @@ def layout(topic=None, **other_unknown_query_strings):
     if topic == "most_watched_content":
         topic_card =  most_watched_content_layout()
     elif topic == "favorite_words":
-        topic_card =  favorite_words_layout
+        topic_card =  favorite_words_layout()
     elif topic == "interests":
-        topic_card =  interests_layout
+        topic_card =  interests_layout()
     elif topic == "format_mix":
-        topic_card =  format_mix_layout
+        topic_card =  format_mix_layout()
     elif topic == "format_trend":
-        topic_card =  format_trend_layout
+        topic_card =  format_trend_layout()
     elif topic == "search_titles":
-        topic_card =  search_titles_layout
+        topic_card =  search_titles_layout()
     elif topic == "unavailable":
-        topic_card =  unavailable_layout
+        topic_card =  unavailable_layout()
     else:
         topic_card= ""
 

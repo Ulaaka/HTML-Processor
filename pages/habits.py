@@ -47,13 +47,13 @@ def layout(topic=None, **other_unknown_query_strings):
     if topic == "busiest_days":
         topic_card =  busiest_days_layout()
     elif topic == "busiest_weeks":
-        topic_card =  busiest_weeks_layout
+        topic_card =  busiest_weeks_layout()
     elif topic == "streaks":
-        topic_card =  streaks_layout
+        topic_card =  streaks_layout()
     elif topic == "weekend_weekday":
-        topic_card =  weekend_weekday_layout
+        topic_card =  weekend_weekday_layout()
     elif topic == "explorer":
-        topic_card =  explorer_layout
+        topic_card =  explorer_layout()
     else:
         topic_card= ""
 
