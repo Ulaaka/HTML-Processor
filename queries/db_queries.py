@@ -1,5 +1,5 @@
 
-from database_connection import Database
+from database.database_connection import Database
 from nltk.corpus import stopwords
 import re
 from datetime import timedelta, datetime

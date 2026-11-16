@@ -10,8 +10,8 @@ from dash import Dash, Input, Output, dash_table, dcc, html
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 
-from database_connection_duckdb import DatabaseDuck
-from db_queries_duckdb import QueryProcessorDuck
+from database.database_connection_duckdb import DatabaseDuck
+from queries.db_queries_duckdb import QueryProcessorDuck
 import os
 from html_parser import HTML_Parser
 from html_processor import HTML_Processor

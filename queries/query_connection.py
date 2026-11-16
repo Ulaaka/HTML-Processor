@@ -1,6 +1,6 @@
 
-from database_connection_duckdb import DatabaseDuck
-from db_queries_duckdb import QueryProcessorDuck
+from database.database_connection_duckdb import DatabaseDuck
+from queries.db_queries_duckdb import QueryProcessorDuck
 
 db = DatabaseDuck()
 query = QueryProcessorDuck(db)

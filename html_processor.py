@@ -1,4 +1,4 @@
-from db_queries_duckdb import QueryProcessorDuck
+from queries.db_queries_duckdb import QueryProcessorDuck
 
 class HTML_Processor:
     def __init__(self, history_list, db):

@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from query_connection import query
+from queries.query_connection import query
 from dash import html, dcc
 from visual_functions import graph, hbar
 def most_watched_layout():

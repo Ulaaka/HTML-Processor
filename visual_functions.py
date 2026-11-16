@@ -21,7 +21,6 @@ def short(s, n=45):
     return s if len(s) <= n else s[: n - 1] + "…"
 
 def hbar(df, x, y, n=20, **kw):
-    """Horizontal ranking bar; long labels are shortened, full text shows on hover."""
     d = df.head(n).assign(_label=lambda t: t[y].map(short))
     fig = px.bar(d, x=x, y="_label", orientation="h", hover_name=y, **kw)
     fig.update_yaxes(autorange="reversed", title=None)
@@ -31,7 +30,6 @@ def donut(df, names, values, n=12):
     return px.pie(df.head(n), names=names, values=values, hole=0.55)
 
 def bar_line(df, x, bar, line):
-    """Counts as bars + percentage change as a line on a second axis."""
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_bar(x=df[x].astype(str), y=df[bar], name=bar)
     fig.add_scatter(x=df[x].astype(str), y=df[line], name=line, mode="lines+markers", secondary_y=True)
@@ -45,7 +43,6 @@ def hour_bar(df):
     return fig
 
 def clock(df):
-    """24h polar 'clock': one wedge per hour, 0:00 at the top."""
     s = df.set_index("hour")["Total Count"].reindex(range(24), fill_value=0)
     fig = go.Figure(go.Barpolar(r=s.values, theta=[h * 15 + 7.5 for h in s.index], width=15,
                                 hovertext=[f"{h}:00" for h in s.index], hoverinfo="text+r"))

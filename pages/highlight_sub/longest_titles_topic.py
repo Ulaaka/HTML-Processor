@@ -1,5 +1,5 @@
 
-from query_connection import query
+from queries.query_connection import query
 from dash import html, Input, Output, dash_table, dcc, callback
 from visual_functions import TABLE_STYLE
 
