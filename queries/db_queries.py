@@ -523,7 +523,6 @@ class QueryProcessor:
                 video_type,
                 count(*) as video_type_month_total
             from watch_history
-            where video_type != 'unavailable'
             group by month, video_type
             order by month
         """
