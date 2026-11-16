@@ -61,15 +61,19 @@ class QueryProcessorDuck:
 
         return time_query, params
 
-    def the_most_watched_channel(self):
+    def the_most_watched_channel(self, limit = 20, lower_range = None, upper_range = None):
         """
         Finds the most watched channels (top 20)
         """
 
-        sql = "SELECT channel_name, channel_url, COUNT(*) AS count FROM watch_history GROUP BY channel_name, channel_url ORDER BY count DESC LIMIT 20"
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
 
-        df = self.con.execute(sql).df()
-        return df.rename(columns = {'channel_name' : 'Channel Name', 'channel_url' : "URL", 'count' : 'Total Watch'})
+        df = df.groupby(['channel_name', 'channel_url'], as_index = False).size()\
+                .rename(columns = {'channel_name' : 'Channel Name', 'channel_url' : "URL", 'size' : 'Total Watch'})\
+                .sort_values('Total Watch', ascending = False)
+
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index().head(limit)
 
     def most_watched_channel_per_month(self, lower_range = None, upper_range = None):
 
@@ -94,7 +98,8 @@ class QueryProcessorDuck:
         """
 
         df =  self.con.execute(sql, params).df().rename(columns = {'month' : 'Year - Month', 'channel_name' : 'Channel Name', 'total_watched' : 'Total Watch'})
-        return df
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index()
 
     def the_most_watched_videos(self, video_type:Literal["reel", "video", "unavailable"] = None, lower_range = None, upper_range = None):
         """
@@ -229,6 +234,14 @@ class QueryProcessorDuck:
         last_date = self.con.fetchone()[0].date()
         return last_date
 
+    def first_day(self):
+        """
+        Finds the last recorded day
+        """
+        sql_first_date = """SELECT MIN(time_stamp) as last_day from watch_history"""
+        self.con.execute(sql_first_date)
+        first_day = self.con.fetchone()[0].date()
+        return first_day
 
 
     def daily_trend(self, video_type:Literal["reel", "video", "unavailable"] = None, current_date=None):
@@ -543,7 +556,7 @@ class QueryProcessorDuck:
 
         return df.reset_index().head(video_limit)
 
-    def the_longest_untouched_channel(self, lower_range=None, upper_range=None):
+    def the_longest_untouched_channel(self, limit = 20, lower_range=None, upper_range=None):
         """
         Needs to have a neglect score where the user can discover channels they used to watch long before
 
@@ -575,7 +588,8 @@ class QueryProcessorDuck:
 
         df = self.con.execute(sql, params).df()\
             .rename(columns = {'channel_name': 'Channel Name', 'channel_url' : 'URL', 'total_count' : 'Total Watch', 'days_since_last' : 'Since Last Watched', 'neglect_score' : 'Neglect Score'})
-        return df
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index().head(limit)
 
     def random_day_discovery(self):
         """
@@ -596,16 +610,19 @@ class QueryProcessorDuck:
 
         return df.reset_index()
 
-    def the_longest_titled_video(self, video_type=None, video_limit=10):
+    def the_longest_titled_video(self, video_limit=10, video_type=None, lower_range = None, upper_range = None):
         """
         Finds the longest titles video
         """
-        where_query = ""
-        if video_type:
-            where_query = f" WHERE video_type = {video_type} "
 
-        sql = f"SELECT video_name, video_url, video_type, LENGTH(video_name) as length_video FROM watch_history " + where_query + f"ORDER BY length_video DESC LIMIT {video_limit} "
-        df = self.con.execute(sql).df().rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'length_video' : 'Title Length'})
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
+
+        if video_type:
+            df = df[df['video_type'] == video_type]
+
+        df = df.assign(length_video = df['video_name'].str.len())[['video_name', 'video_url', 'video_type', 'length_video']]\
+                .sort_values('length_video', ascending = False)\
+                .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'length_video' : 'Title Length'})
 
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index().head(video_limit)
