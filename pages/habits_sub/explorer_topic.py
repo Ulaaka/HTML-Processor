@@ -70,13 +70,14 @@ def update_graph(start_date, end_date, limit, time, video_category, video_type):
 
     df = query.date_type_time_func(limit=limit, video_type=video_type, video_category = video_category, time = time, lower_range=start_date, upper_range=end_date)
 
+    url_list = ['Video URL', 'Channel URL']
     cols = [
         {"name": str(c), "id": str(c),
-         **({"presentation": "markdown"} if c in ['Video URL', 'Channel URL'] else {})}
+         **({"presentation": "markdown"} if c in url_list else {})}
         for c in df.columns
     ]
 
-    df["Video URL"] = df["Video URL"].apply(lambda u: f"[open]({u})")
-    df["Channel URL"] = df["Channel URL"].apply(lambda u: f"[open]({u})")
+    for url in url_list:
+        df[url] = df[url].apply(lambda u: f"[open]({u})")
 
     return df.to_dict("records"), cols
