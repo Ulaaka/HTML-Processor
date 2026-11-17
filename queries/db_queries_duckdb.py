@@ -482,21 +482,22 @@ class QueryProcessorDuck:
                 .sort_values('size', ascending=False).rename(columns={'size' : 'Total Count'}).reset_index(drop = True)
         return result
 
-    def weekday_vs_weekend(self, lower_range=None, upper_range=None):
+    def weekday_vs_weekend(self, category_or_type, lower_range=None, upper_range=None):
         # average number of videos, reels, category, can find top categories of each
 
         time_query , params  = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
+        chosen = 'video_category' if category_or_type == 'Category' else 'video_type'
 
         sql_define_days = f"""
             select
-                video_type,
+                {chosen},
                 sum(case when day_type = 'weekday' then avg else 0 end) as weekday_avg,
                 sum(case when day_type = 'weekend' then avg else 0 end) as weekend_avg
             from (
                     select
                         day_type,
-                        video_type,
+                        {chosen},
                         round(count(*) / (case when day_type = 'weekday' then 5 else 2 end), 2) as avg
                     from (
                             select
@@ -508,12 +509,12 @@ class QueryProcessorDuck:
                             from watch_history
                             {time_query}
                         ) as t
-                    group by day_type, video_type
+                    group by day_type, {chosen}
                 ) as t
-            group by video_type
+            group by {chosen}
         """
 
-        df = self.con.execute(sql_define_days, params).df().rename(columns = {'video_type' : 'Video Type', 'weekday_avg' : 'Weekday Average', 'weekend_avg' : 'Weekend Average'})
+        df = self.con.execute(sql_define_days, params).df().rename(columns = {'video_type' : 'Type', "video_category" : 'Category',  'weekday_avg' : 'Weekday Average', 'weekend_avg' : 'Weekend Average'})
         return df
 
     def binge_watch_detection(self, lower_range=None, upper_range=None):

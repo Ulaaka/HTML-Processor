@@ -20,6 +20,12 @@ def weekend_weekday_layout():
             initial_visible_month=first_day,
             end_date=last_day
         ),
+        html.Br(),
+        html.P("By which filter:"),
+        dcc.Dropdown(id='dropdown_weekend_weekday',
+                options=['Category', 'Type'],
+                value='Category', clearable=False
+        ),
         dcc.Graph(id='weekend_weekday_graph'),
         dbc.Accordion(id='weekend_weekday_table', start_collapsed=True, flush=True)
     ])
@@ -28,18 +34,20 @@ def weekend_weekday_layout():
     Output("weekend_weekday_graph", "figure"),
     Output("weekend_weekday_table", "children"),
     Input('date_range_weekend_weekday', 'start_date'),
-    Input('date_range_weekend_weekday', 'end_date')
+    Input('date_range_weekend_weekday', 'end_date'),
+    Input('dropdown_weekend_weekday', 'value')
 )
-def update_graph(start_date, end_date):
+def update_graph(start_date, end_date, category_or_type):
     if start_date:
         start_date = date.fromisoformat(start_date).strftime('%Y-%m-%d')
 
     if end_date:
         end_date = date.fromisoformat(end_date).strftime('%Y-%m-%d')
 
-    df = query.weekday_vs_weekend(lower_range=start_date, upper_range=end_date)
-    df = df.melt(id_vars="Video Type", var_name="Day type", value_name="Average")
+    df = query.weekday_vs_weekend(category_or_type=category_or_type, lower_range=start_date, upper_range=end_date)
 
-    figure = px.bar(df, x="Video Type", y="Average", color="Day type", barmode="group")
+    df = df.melt(id_vars=category_or_type, var_name="Day type", value_name="Average")
+
+    figure = px.bar(df, x=category_or_type, y="Average", color="Day type", barmode="group")
 
     return figure, [dbc.AccordionItem(table(df), title="Show data")]
