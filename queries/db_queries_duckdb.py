@@ -649,24 +649,30 @@ class QueryProcessorDuck:
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index().head(limit)
 
-    def random_day_discovery(self):
-        """
-        Shows the itinerary of one random day
-        """
-        self.con.execute("SELECT DISTINCT DATE(time_stamp) AS d FROM watch_history ORDER BY random() LIMIT 1")
-        random_date = self.con.fetchone()[0]
+    def random_date(self):
+        self.con.execute("SELECT DISTINCT DATE(time_stamp) FROM watch_history ORDER BY random() LIMIT 1")
+        return str(self.con.fetchone()[0])
 
+    def random_day_discovery(self, category_or_type, date):
         sql = """
             SELECT video_name, video_url, video_type, video_category, time_stamp
             FROM watch_history
-            WHERE time_stamp >= ? AND time_stamp < ? + INTERVAL 1 DAY
+            WHERE time_stamp >= CAST(? AS DATE)
+            AND time_stamp <  CAST(? AS DATE) + INTERVAL 1 DAY
             ORDER BY time_stamp ASC
         """
-        df = self.con.execute(sql, (random_date, random_date)).df()\
-            .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'video_type' : 'Type', 'time_stamp' : 'Timestamp'})
-        df.index = np.arange(1, len(df) + 1)
+        df = self.con.execute(sql, (date, date)).df()\
+            .rename(columns={'video_name': 'Name', 'video_url': 'URL', 'video_category': 'Category',
+                            'video_type': 'Type', 'time_stamp': 'Timestamp'})
 
-        return df.reset_index()
+        pivoted = (
+            pd.crosstab(df['Timestamp'].dt.hour, df[category_or_type])
+            .reindex(range(24), fill_value=0)
+            .rename_axis('Hour')
+        )
+
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index(), pivoted
 
     def the_longest_titled_video(self, video_limit=20, video_category = None, video_type=None, lower_range = None, upper_range = None):
         """

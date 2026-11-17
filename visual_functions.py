@@ -54,15 +54,6 @@ def clock(df):
         radialaxis=dict(showticklabels=False, gridcolor="#e9ecef")))
     return fig
 
-def streaks(df):
-    d = df.copy()
-    d["Start"] = pd.to_datetime(d["Start"])
-    d["End"] = pd.to_datetime(d["End"]) + pd.Timedelta(days=1)
-    d["Streak"] = [f"#{i + 1} · {n} days" for i, n in enumerate(d["Total Days"])]
-    fig = px.timeline(d, x_start="Start", x_end="End", y="Streak", color="Total Days",
-                      color_continuous_scale="Blues")
-    fig.update_yaxes(autorange="reversed", title=None)
-    return fig
 
 def week_label(s):
     return pd.to_datetime(s).dt.strftime("Week of %b %d")

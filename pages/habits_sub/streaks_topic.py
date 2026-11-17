@@ -42,9 +42,8 @@ def update_graph(limit, start_date, end_date):
 
     df = query.streak_analysis(limit=limit, lower_range=start_date, upper_range=end_date)
 
-    df["Start"] = pd.to_datetime(df["Start"])
-    df["End"] = pd.to_datetime(df["End"]) + pd.Timedelta(days=1)
-    df["Streak"] = [f"#{i + 1} · {n} days" for i, n in enumerate(df["Total Days"])]
+
+    df = df.assign(Start = pd.to_datetime(df["Start"]), End = pd.to_datetime(df["End"]) + pd.Timedelta(days=1), Streak = [f"{n} days" for n in df["Total Days"]])
 
     figure = px.timeline(df, x_start="Start", x_end="End", y="Streak", color="Total Days", color_continuous_scale="Blues")\
                     .update_yaxes(autorange="reversed", title=None)
