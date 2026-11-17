@@ -47,8 +47,10 @@ def update_table(search, start_date, end_date):
 
     cols = [
         {"name": str(c), "id": str(c),
-         **({"presentation": "markdown"} if c == "URL" else {})}
+         **({"presentation": "markdown"} if c == "Channel URL" else {})}
         for c in df.columns
     ]
+
+    df["Channel URL"] = df["Channel URL"].apply(lambda u: f"[open]({u})")
 
     return df.to_dict("records"), cols

@@ -2,13 +2,24 @@ import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, Input, Output, dash_table, dcc, callback
 from visual_functions import TABLE_STYLE
+from html_parser import category_mapping
 
 def last_watched_layout():
-
     return html.Div([
-        dbc.Card("Latest videos you watched", body=True, className="mt-2"),
         html.H6("Rows to show:"),
         dcc.Input(id="rows_to_show_last", value=20, type="number", min=1),
+        html.Br(),
+        html.P("Category:"),
+        dcc.Dropdown(id='dropdown_last_watched_category',
+                options=['All'] + list(category_mapping.values()),
+                value='All', clearable=False
+        ),
+        html.Br(),
+        html.P("Video Type:"),
+        dcc.Dropdown(id='dropdown_last_watched_type',
+                options=['All', 'Video', 'Reel', 'Unavailable'],
+                value='All', clearable=False
+        ),
         html.H6("Search:"),
         dcc.Input(id="search_last", type="text", placeholder="Search"),
         html.Br(),
@@ -18,15 +29,24 @@ def last_watched_layout():
         )
     ])
 
-
 @callback(
     Output("table_last", "data"),
     Output("table_last", "columns"),
     Input("rows_to_show_last", "value"),
-    Input("search_last", "value")
+    Input("search_last", "value"),
+    Input("dropdown_last_watched_category", "value"),
+    Input("dropdown_last_watched_type", "value")
 )
-def update_table(rows, search):
-    df = query.first_last_videos_ever_watched(rows, first_or_last=False)
+def update_table(rows, search, video_category, video_type):
+    if video_category == 'All':
+        video_category = None
+
+    if video_type == 'All':
+        video_type = None
+    else:
+        video_type = video_type.lower()
+
+    df = query.first_last_videos_ever_watched(rows, video_category=video_category, video_type=video_type, first_or_last=False)
 
     if search:
         df = df[df.astype(str).apply(lambda row: row.str.contains(search, case=False)).any(axis=1)]

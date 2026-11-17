@@ -4,19 +4,34 @@ from dash import html, dcc, callback, Output, Input
 from visual_functions import hbar, table
 from datetime import date
 import plotly.express as px
-
+from html_parser import category_mapping
 
 def format_trend_layout():
-    df = query.video_length_trend_over_month()
+    return html.Div([
+        html.P("Category:"),
+        dcc.Dropdown(id='dropdown_format_trend',
+                options=['All'] + list(category_mapping.values()),
+                value='All', clearable=False
+            ),
+        dcc.Graph(id='format_trend_graph'),
+        dbc.Accordion(id='format_trend_table', start_collapsed=True, flush=True)
+    ])
+
+
+@callback(
+    Output("format_trend_graph", "figure"),
+    Output("format_trend_table", "children"),
+    Input('dropdown_format_trend', 'value')
+)
+
+def update_graph(video_category):
+
+    if video_category == 'All':
+        video_category = None
+
+    df = query.video_length_trend_over_month(video_category=video_category)
 
     figure = px.bar(df.melt(id_vars="Video Type", var_name="Month",
                     value_name="Videos"),
             x="Month", y="Videos", color="Video Type")
-
-    return html.Div([
-        html.Div([
-            dcc.Graph(id='format_trend_graph', figure=figure),
-            dbc.Accordion( [dbc.AccordionItem(table(df), title="Show data")], id='format_trend_table', start_collapsed=True, flush=True
-            )
-        ])
-    ])
+    return figure, [dbc.AccordionItem(table(df), title="Show data")]

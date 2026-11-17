@@ -17,7 +17,7 @@ def interests_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Channels to Show:"),
+        html.H6("Categories to show:"),
         dcc.Slider(5, 40, 5, value=20, id='slider_category_count'),
         html.Br(),
         html.Div([

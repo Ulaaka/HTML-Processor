@@ -101,33 +101,51 @@ class QueryProcessorDuck:
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index()
 
-    def the_most_watched_videos(self, limit = 20, video_type:Literal["reel", "video", "unavailable"] = None, lower_range = None, upper_range = None):
+    def the_most_watched_videos(self, limit = 20, video_category = None, video_type =  None, lower_range = None, upper_range = None):
         """
-        Finds the most watched videos (top 20)
+        Finds the most watched videos
         """
         df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
+
+
+        default_group = ['video_name', 'video_url']
+        columns = {'video_name' : 'Name', 'video_url' : 'URL', 'size' : 'Total Watch'}
 
         if video_type:
             df = df[df['video_type'] == video_type]
 
-        df = df.groupby(['video_name', 'video_url'], as_index = False).size().sort_values("size", ascending = False).rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'size' : 'Total Watch'})
+        if video_category:
+            df = df[df['video_category'] == video_category]
+
+        df = df.groupby(default_group, as_index = False).size().sort_values("size", ascending = False).rename(columns = columns)
 
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index().head(limit)
 
 
-    def the_most_repeated_words(self, limit = 20, lower_range = None, upper_range = None):
+    def the_most_repeated_words(self, limit=20, video_category=None, video_type=None, lower_range=None, upper_range=None):
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
 
-        df= self.date_range_handler(lower_range, upper_range, as_dataframe=True).drop_duplicates(subset='video_name')
+        if 'video_name' not in df.columns:
+            return pd.DataFrame(columns=['Word', 'Total Count'])
 
-        df['video_name'] = df['video_name'].str.strip().str.lower().str.split().to_list()
+        if video_category:
+            df = df[df['video_category'] == video_category]
+
+        if video_type:
+            df = df[df['video_type'] == video_type]
+
+        df['video_name'] = (df['video_name'].fillna('').astype(str).str.strip().str.lower().str.split())
+
         df = df.explode('video_name')
-        df['video_name'] = df['video_name'].str.replace(r'[^a-zA-Z0-9]', '', regex=True)
-        df = df[(~df['video_name'].isin(list(self.stop_words))) & (df['video_name'].str.len() >= 2)]
 
-        df = df.groupby('video_name', as_index=False).size()\
-                .sort_values('size', ascending=False)\
-                .rename(columns = {'video_name' : 'Word', 'size' : 'Total Count'})
+        df['video_name'] = df['video_name'].str.replace(
+            r'[^\w]', '', regex=True
+        )
+
+        df = df[(df['video_name'].str.len() >= 2) &(~df['video_name'].isin(self.stop_words))]
+
+        df = (df.groupby('video_name').size().reset_index(name='Total Count').sort_values('Total Count', ascending=False).rename(columns={'video_name': 'Word'}))
 
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index().head(limit)
@@ -148,25 +166,30 @@ class QueryProcessorDuck:
         df = self.con.execute(sql, params).df().rename(columns = {'video_name' : 'Video Name', 'video_url' : 'URL', 'time_stamp' : 'Timestamp'})
         return df
 
-    def the_busiest_day(self, lower_range=None, upper_range=None):
+    def the_busiest_day(self, category_or_type, limit=20, lower_range=None, upper_range=None):
         """
-        Finds the busiest days recorded
+        Finds the busiest days recorded (pandas version)
         """
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
 
-        time_query, params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
+        df["time_stamp"] = pd.to_datetime(df["time_stamp"])
+        df["date"] = df["time_stamp"].dt.date
+        df["week_day"] = df["time_stamp"].dt.day_name()
 
-        sql = f"""
-            select
-                date(time_stamp) as date,
-                dayname(time_stamp) as week_day,
-                count(*) as total_count
-            from watch_history
-            {time_query}
-            group by date, week_day
-            order by total_count desc, week_day asc
-        """
-        df = self.con.execute(sql, params).df().rename(columns = {'date' : 'Date', 'week_day' : 'Day of Week', 'total_count': 'Total Count'})
-        return df.head(20)
+        daily = df.groupby(["date", "week_day", chosen]).size().reset_index(name="type_count")
+        daily["total_count"] = daily.groupby("date")["type_count"].transform("sum")
+
+        top_days = daily[["date", "total_count"]].drop_duplicates()\
+                    .sort_values(["total_count", "date"], ascending=False).head(limit)["date"]
+
+        result = daily[daily["date"].isin(top_days)].sort_values(["total_count", "date", "type_count"], ascending=False)\
+                    .rename(columns={"date": "Date", "week_day": "Day of Week",
+                                    chosen: category_or_type,   "type_count": "Sub Count",
+                                    "total_count": "Total Count"
+                                    })\
+                    .reset_index(drop=True)
+        return result
 
     def unique_type_find(self):
 
@@ -189,7 +212,9 @@ class QueryProcessorDuck:
 
     def date_type_time_func(
             self,
-            video_type:Literal["reel", "video", "unavailable"] = None,
+            limit = 2,
+            video_type = None,
+            video_category = None,
             time:Literal["morning", "afternoon", "evening", "night"] = None,
             category = None,
             lower_range=None,
@@ -214,6 +239,8 @@ class QueryProcessorDuck:
         if video_type:
             df = df[df['video_type'] == video_type]
 
+        if video_category:
+            df = df[df['video_category'] == video_category]
         if time:
             df['hour'] = df['time_stamp'].dt.hour
             df['time'] =   np.where(df['hour'].isin(time_dictionary['afternoon']), 'afternoon',
@@ -224,7 +251,19 @@ class QueryProcessorDuck:
         if category:
             df = df[df['video_category'] == category]
 
-        return df.sort_values('time_stamp').drop(columns = ['historyID', 'time_stamp']).reset_index(drop = True).head(20)
+        df = df.sort_values('time_stamp', ascending = False).drop(columns = 'historyID')\
+                .rename(columns = {
+                            'video_url' : 'Video URL',
+                            'video_name' : 'Video Name',
+                            'video_type' : 'Type',
+                            'video_category' : 'Category',
+                            'channel_name' : 'Channel Name',
+                            'channel_url' : 'Channel URL',
+                            'time_stamp' : 'Timestamp'
+                            })
+
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index().head(limit)
 
     def last_day(self):
         """
@@ -398,22 +437,37 @@ class QueryProcessorDuck:
         df = self.con.execute(sql, [year_choice, month_choice]).df().rename(columns = {'channel_name' : 'Channel Name', 'channel_url' : 'URL', 'count' : 'Total Count'})
         return df
 
-    def most_watched_week(self, lower_range=None, upper_range=None, video_type=None):
+    def most_watched_week(self, category_or_type, limit = 20, lower_range=None, upper_range=None):
         """
         Finds start and end of the week where the user watched the most (depending on video type)
         """
 
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
+
         df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
+
         df['time_stamp'] = df['time_stamp'].dt.normalize()
 
         df['first_day'] = df['time_stamp'] - df['time_stamp'].dt.weekday * pd.Timedelta(days=1)
-        df['last_day'] = df['first_day'] + pd.Timedelta(days=6)
+        df['combined'] = df['first_day'].astype(str) + ' - ' +(df['first_day'] + pd.Timedelta(days=6)).astype(str)
 
-        if video_type:
-            df = df[df['video_type'] == video_type]
+        daily = df.groupby(['combined', chosen]).size().reset_index(name="type_count")
 
-        result = df.groupby(['first_day', 'last_day'], as_index=False).size()\
-                    .sort_values('size', ascending=False).rename(columns = {'size' : 'Total Count'}).reset_index(drop = True)
+        daily["total_count"] = daily.groupby(['combined'])['type_count'].transform('sum')
+
+        top_weeks = daily[['combined', 'total_count']].drop_duplicates().sort_values(["total_count", "combined"], ascending=False).head(limit)["combined"]
+
+        result = (
+            daily[daily["combined"].isin(top_weeks)]
+            .sort_values(["total_count", "combined", "type_count"], ascending=False)
+            .rename(columns={
+                "combined": "Week",
+                chosen: category_or_type,
+                "type_count": "Sub Count",
+                "total_count": "Total Count"
+            })
+            .reset_index(drop=True)
+        )
 
         return result
 
@@ -452,10 +506,10 @@ class QueryProcessorDuck:
                                     else 'weekend'
                                     end AS day_type
                             from watch_history
+                            {time_query}
                         ) as t
                     group by day_type, video_type
                 ) as t
-            {time_query}
             group by video_type
         """
 
@@ -465,7 +519,7 @@ class QueryProcessorDuck:
     def binge_watch_detection(self, lower_range=None, upper_range=None):
         pass
 
-    def streak_analysis(self, lower_range=None, upper_range=None):
+    def streak_analysis(self, limit = 20, lower_range=None, upper_range=None):
 
         time_query , params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
 
@@ -481,45 +535,49 @@ class QueryProcessorDuck:
                     FROM (
                             SELECT DISTINCT DATE(time_stamp) AS d
                             FROM watch_history
+                            {time_query}  
                         ) AS days
                 ) AS t
-            {time_query}
             GROUP BY grouped
             ORDER BY streak DESC
         """
 
         df = self.con.execute(sql, params).df().rename(columns = {'streak_start' : 'Start', 'streak_end' : 'End', 'streak' : 'Total Days'})
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index().head(limit)
+
+    def video_length_preference(self, video_category = None, lower_range=None, upper_range=None):
+        df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
+
+        if video_category:
+            df = df[df['video_category'] == video_category]
+
+        df = df.groupby('video_type', as_index = False).size()\
+                .rename(columns = {'video_type' : 'Type', 'size' : 'Total Count'})\
+                .sort_values('Total Count', ascending = False)
+
         return df
 
-    def video_length_preference(self, lower_range=None, upper_range=None):
-        time_query , params = self.date_range_handler(lower_range, upper_range, as_dataframe=False)
+    def video_length_trend_over_month(self, video_category = None):
+
+        sql_category = ""
+        params = []
+        if video_category:
+            sql_category+="where video_category = ?"
+            params.append(video_category)
 
         sql = f"""
-            select
-                video_type,
-                count(*) as total
-            from watch_history
-            {time_query}
-            group by video_type
-            order by total desc
-        """
-
-        df = self.con.execute(sql, params).df().rename(columns = {'video_type' : 'Type', 'total' : 'Total Count'})
-        return df
-
-    def video_length_trend_over_month(self):
-
-        sql = """
             select
                 strftime(time_stamp, '%Y-%m') as Month,
                 video_type,
                 count(*) as video_type_month_total
             from watch_history
+            {sql_category}
             group by month, video_type
             order by month
         """
 
-        df = self.con.execute(sql).df().rename(columns = {'video_type' : 'Video Type', 'video_type_month_total' : 'Month Total'})
+        df = self.con.execute(sql, params).df().rename(columns = {'video_type' : 'Video Type', 'video_type_month_total' : 'Month Total'})
 
         pivoted = pd.pivot_table(df, index='Video Type', columns='Month', values='Month Total').reset_index()
         return pivoted
@@ -528,22 +586,26 @@ class QueryProcessorDuck:
 
         df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
 
-        df = df[df['video_type'] == 'unavailable']\
-                .drop(columns = "historyID")\
-                .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'video_type' : 'Type', 'video_category' : 'Category', 'time_stamp' : 'Timestamp'})\
+        df = df[df['video_type'] == 'unavailable'][['video_name', 'video_type', 'channel_url', 'channel_name', 'time_stamp']]\
+                .rename(columns = {'video_name' : 'Name',  'video_type' : 'Type', 'channel_name' : 'Channel Name', 'channel_url' : 'Channel URL', 'time_stamp' : 'Timestamp'})\
                 .sort_values('Timestamp', ascending = False)
 
         df.index = np.arange(1, len(df) + 1)
 
         return df.reset_index()
-    def first_last_videos_ever_watched(self, video_limit=1, video_type:Literal["reel", "video", "unavailable"] = None, first_or_last = True):
+
+    def first_last_videos_ever_watched(self, video_limit=20, video_category = None, video_type = None, first_or_last = True):
         """
         Finds the first ever video watched
         """
 
         df = self.table.copy()
+
         if video_type:
             df = df[df['video_type'] == video_type]
+
+        if video_category:
+            df = df[df['video_category'] == video_category]
 
         df = df.sort_values("time_stamp", ascending = first_or_last)[['video_name', 'video_url', 'video_type', 'video_category', 'time_stamp']]\
                 .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'video_type' : 'Type', 'video_category' : 'Category', 'time_stamp' : 'Timestamp'})
@@ -606,7 +668,7 @@ class QueryProcessorDuck:
 
         return df.reset_index()
 
-    def the_longest_titled_video(self, video_limit=10, video_type=None, lower_range = None, upper_range = None):
+    def the_longest_titled_video(self, video_limit=20, video_category = None, video_type=None, lower_range = None, upper_range = None):
         """
         Finds the longest titles video
         """
@@ -615,6 +677,9 @@ class QueryProcessorDuck:
 
         if video_type:
             df = df[df['video_type'] == video_type]
+
+        if video_category:
+            df = df[df['video_category'] == video_category]
 
         df = df.assign(length_video = df['video_name'].str.len())[['video_name', 'video_url', 'video_type', 'length_video']]\
                 .sort_values('length_video', ascending = False)\

@@ -8,7 +8,9 @@ from plotly.subplots import make_subplots
 import dash_bootstrap_components as dbc
 
 TABLE_STYLE = dict(
-    page_size=10, sort_action="native", style_table={"overflowX": "auto"},
+    page_size=10, 
+    sort_action="native", 
+    style_table={"overflowX": "auto"},
     style_header={"backgroundColor": "#f8f9fa", "fontWeight": "600", "border": "none",
                   "borderBottom": "1px solid #dee2e6"},
     style_cell={"border": "none", "borderBottom": "1px solid #f1f3f5", "padding": "8px 12px",
@@ -53,7 +55,7 @@ def clock(df):
     return fig
 
 def streaks(df):
-    d = df.head(15).copy()
+    d = df.copy()
     d["Start"] = pd.to_datetime(d["Start"])
     d["End"] = pd.to_datetime(d["End"]) + pd.Timedelta(days=1)
     d["Streak"] = [f"#{i + 1} · {n} days" for i, n in enumerate(d["Total Days"])]
