@@ -284,35 +284,27 @@ class QueryProcessorDuck:
         return first_day
 
 
-    def daily_trend(self, video_type:Literal["reel", "video", "unavailable"] = None, current_date=None):
+    def daily_trend(self, category_or_type, current_date):
 
-        last_date = self.last_day()
-
-        if not current_date or datetime.strptime(current_date, "%Y-%m-%d").date() > last_date:
-            current_date = last_date
-
-        add_sql = "COUNT(*)"
-        params = []
-
-        if video_type:
-            add_sql = "COUNT(CASE WHEN video_type = ? THEN 1 END)"
-            params.append(video_type)
-
-        sql = f"""
-            SELECT
-                DATE(time_stamp) as Day,
-                HOUR(time_stamp) as Hour,
-                {add_sql} AS hour_count
+        sql = """
+            SELECT video_name, video_url, video_type, video_category, time_stamp
             FROM watch_history
-            WHERE DATE(time_stamp) = ?
-            GROUP BY day, hour
-            ORDER BY hour ASC
+            WHERE time_stamp >= CAST(? AS DATE)
+            AND time_stamp <  CAST(? AS DATE) + INTERVAL 1 DAY
+            ORDER BY time_stamp ASC
         """
+        df = self.con.execute(sql, (current_date, current_date)).df()\
+            .rename(columns={'video_name': 'Name', 'video_url': 'URL', 'video_category': 'Category',
+                            'video_type': 'Type', 'time_stamp': 'Timestamp'})
 
-        params.append(current_date)
+        pivoted = (
+            pd.crosstab(df['Timestamp'].dt.hour, df[category_or_type])
+            .reindex(range(24), fill_value=0)
+            .rename_axis('Hour')
+        )
 
-        df = self.con.execute(sql, params).df().rename(columns = {'hour_count' : 'Total Count'})
-        return df
+        df.index = np.arange(1, len(df) + 1)
+        return df.reset_index(), pivoted
 
     def weekly_trend(self, video_type:Literal["reel", "video", "unavailable"] = None, week_limit = 4):
 
