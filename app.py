@@ -9,7 +9,6 @@ app = dash.Dash(
     suppress_callback_exceptions=True,
 )
 
-
 navbar = dbc.NavbarSimple(
     dbc.Nav(
         [

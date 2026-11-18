@@ -5,6 +5,7 @@ from visual_functions import hbar, table
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
+
 def years_trend_layout():
     return html.Div([
         html.Br(),
