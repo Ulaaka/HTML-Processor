@@ -1,3 +1,2 @@
 Plan - >
-- need to standardise the query funcs, group them into categories so it will be easier to know what custom filter i should implement.
-- do some basic dashboard with dash, use plotly as its native to it.
+- need to clean the functions, improve the readability and set proper structure for functions ( such as standardise namings of some args etc)
