@@ -7,7 +7,9 @@ path_pagename_map_content = {
     "/time_patterns/months_trend": "Months Trend",
     "/time_patterns/quarters_trend": "Quarters Trend",
     "/time_patterns/years_trend": "Years Trend",
-    "/time_patterns/time_day": "Time of the Day"
+    "/time_patterns/time_day": "Time of the Day",
+    "/time_patterns/last_days": "Last Days"
+
 }
 
 def sidebar_time_patterns(current_path):

@@ -4,7 +4,6 @@ from dash import html, dash_table, dcc, Output, Input, callback, State
 from visual_functions import TABLE_STYLE
 import plotly.express as px
 
-
 def random_day_layout():
     random_date  = query.random_date()
     return html.Div([

@@ -9,6 +9,8 @@ from .time_patterns_sub.months_trend_topic import months_trend_layout
 from .time_patterns_sub.quarters_trend_topic import quarters_trend_layout
 from .time_patterns_sub.years_trend_topic import years_trend_layout
 from .time_patterns_sub.time_day_topic import time_day_layout
+from .time_patterns_sub.last_days_topic import last_days_layout
+
 
 def title(topic=None):
     # This will show in browser tab and the meta tags
@@ -27,6 +29,8 @@ def description(topic=None):
     elif topic == "years_trend":
         return ""
     elif topic == "time_day":
+        return ""
+    elif topic == "last_days":
         return ""
 
     return "Here is general info about the topics on this page"
@@ -59,6 +63,8 @@ def layout(topic=None, **other_unknown_query_strings):
         topic_card =  years_trend_layout()
     elif topic == "time_day":
         topic_card =  time_day_layout()
+    elif topic == "last_days":
+        topic_card =  last_days_layout()
     else:
         topic_card= ""
 

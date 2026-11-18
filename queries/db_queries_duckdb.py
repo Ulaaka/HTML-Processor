@@ -191,6 +191,34 @@ class QueryProcessorDuck:
                     .reset_index(drop=True)
         return result
 
+    def last_days_trend(self, category_or_type, limit = 7):
+        """
+        Finds the trend for the 7 days
+        """
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
+
+        df = self.table.copy()
+
+        last_day = self.last_day()
+        df['time_stamp'] = df['time_stamp'].dt.normalize()
+
+        df = pd.merge(
+                pd.DataFrame(pd.date_range(last_day - pd.Timedelta(days=limit - 1), last_day), columns=['time_stamp']),
+                df,
+                on = 'time_stamp'
+        )
+
+        df["week_day"] = df["time_stamp"].dt.day_name()
+        daily = df.groupby(["time_stamp", "week_day", chosen]).size().reset_index(name="type_count")
+        daily["total_count"] = daily.groupby("time_stamp")["type_count"].transform("sum")
+        daily["time_stamp"] = daily["time_stamp"].dt.strftime("%Y-%m-%d")
+        result = daily.rename(columns={"time_stamp": "Date", "week_day": "Day of Week",
+                                    chosen: category_or_type,   "type_count": "Sub Count",
+                                    "total_count": "Total Count"
+                                    })\
+                    .sort_values('Date').reset_index()
+        return result
+
     def unique_type_find(self):
 
         type_set = set()
@@ -290,9 +318,10 @@ class QueryProcessorDuck:
             SELECT video_name, video_url, video_type, video_category, time_stamp
             FROM watch_history
             WHERE time_stamp >= CAST(? AS DATE)
-            AND time_stamp <  CAST(? AS DATE) + INTERVAL 1 DAY
+            AND time_stamp <  CAST(? AS DATE) + INTERVAL  DAY
             ORDER BY time_stamp ASC
         """
+
         df = self.con.execute(sql, (current_date, current_date)).df()\
             .rename(columns={'video_name': 'Name', 'video_url': 'URL', 'video_category': 'Category',
                             'video_type': 'Type', 'time_stamp': 'Timestamp'})
@@ -307,7 +336,7 @@ class QueryProcessorDuck:
         return df.reset_index(), pivoted
 
     def weekly_trend(self, video_type:Literal["reel", "video", "unavailable"] = None, week_limit = 4):
-
+        # needs to be able to choose from which date to another date, and just calcualt ehte weeks between and show maybe
         df = self.table.copy()
         last_day = df['time_stamp'].max()
         last_week_start = last_day.normalize() - pd.Timedelta(days=last_day.weekday())
@@ -326,6 +355,37 @@ class QueryProcessorDuck:
                 .agg(first_day = ('time_stamp', 'min'), last_day =  ('time_stamp', 'max'), size = ('historyID', 'nunique'))\
                 .rename(columns = {'first_day' : 'First Day', 'last_day' : 'Last Day', 'size' : 'Total Count'})\
 
+    def weekly_trend_updated(self, category_or_type, limit = 4):
+        """
+        Finds the trend last given number of weeks
+        """
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
+
+        df = self.table.copy()
+
+        df['time_stamp'] = df['time_stamp'].dt.normalize()
+
+        df['first_day'] = df['time_stamp'] - df['time_stamp'].dt.weekday * pd.Timedelta(days=1)
+        df['combined'] = df['first_day'].astype(str) + ' - ' +(df['first_day'] + pd.Timedelta(days=6)).astype(str)
+
+        df['ranked'] = df['first_day'].rank(method = 'dense', ascending = False)
+
+        df = df[df['ranked'] <= limit]
+        daily = df.groupby(['combined', chosen]).size().reset_index(name="type_count")
+
+        daily["total_count"] = daily.groupby(['combined'])['type_count'].transform('sum')
+
+
+        result = daily.sort_values(["combined", "total_count", "type_count"])\
+                    .rename(columns={
+                        "combined": "Week",
+                        chosen: category_or_type,
+                        "type_count": "Sub Count",
+                        "total_count": "Total Count"
+                    })\
+                    .reset_index(drop=True)
+
+        return result
 
     def monthly_trend(self, year_choice = None, video_type:Literal["reel", "video", "unavailable"] = None):
         """
@@ -346,7 +406,34 @@ class QueryProcessorDuck:
         df['cpc'] = ((df['size'] * 100 / df['size'].shift().fillna(df['size'])) - 100).round(2)
         return df[df['year'] == year_choice].rename(columns = {'year' : 'Year', 'month' : 'Month' , 'size' : 'Total Count', 'cpc' : 'Change (%)'}).reset_index(drop = True)
 
-    def seasonal_trend(self, year_choice=None, video_type:Literal["reel", "video", "unavailable"] = None):
+    def monthly_trend_updated(self, category_or_type, limit = 4):
+        """
+        Finds the trend last given number of months
+        """
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
+
+        df = self.table.copy()
+
+        df['combined'] = df['time_stamp'].dt.strftime("%Y-%m")
+        df['ranked'] =  df['combined'].rank(method = 'dense', ascending = False)
+
+        df = df[df['ranked'] <= limit]
+        daily = df.groupby(['combined', chosen]).size().reset_index(name="type_count")
+
+        daily["total_count"] = daily.groupby(['combined'])['type_count'].transform('sum')
+
+        result = daily.sort_values(["combined", "total_count", "type_count"])\
+                    .rename(columns={
+                        "combined": "Month",
+                        chosen: category_or_type,
+                        "type_count": "Sub Count",
+                        "total_count": "Total Count"
+                    })\
+                    .reset_index(drop=True)
+
+        return result
+
+    def quarter_trend(self, year_choice=None, video_type:Literal["reel", "video", "unavailable"] = None):
         """
         Finds the trend of view by the seasons
         Change is calculated based on diff between prev season
@@ -373,6 +460,44 @@ class QueryProcessorDuck:
 
         return None if result.empty else result
 
+    def quarter_trend_updated(self, category_or_type, year):
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
+
+        df = self.table.copy()
+
+        df = df.assign(Year=df['time_stamp'].dt.year, month=df['time_stamp'].dt.month)
+
+        df['Quarter'] = np.where(df['month'].isin(self.quarter_month_map[1]), 1,
+                        np.where(df['month'].isin(self.quarter_month_map[2]), 2,
+                        np.where(df['month'].isin(self.quarter_month_map[3]), 3, 4)))
+
+
+        df['Quarter_Start'] = df.groupby(['Year', 'Quarter'])['time_stamp'].transform('min').dt.strftime("%Y-%m-%d")
+        df['Quarter_End'] = df.groupby(['Year', 'Quarter'])['time_stamp'].transform('max').dt.strftime("%Y-%m-%d")
+
+        daily = df.groupby(['Year', 'Quarter', chosen]).agg(
+            type_count=('historyID', 'nunique'), 
+            min_date=('Quarter_Start', 'first'), 
+            max_date=('Quarter_End', 'first')
+        ).reset_index()
+
+        daily["total_count"] = daily.groupby(['Year', 'Quarter'])['type_count'].transform('sum')
+
+        daily = daily[daily['Year'] == year]
+
+        result = daily.sort_values(['Year', 'Quarter', "total_count", "type_count"])\
+                    .rename(columns={
+                        'min_date': 'Start Date',
+                        'max_date': 'End Date',
+                        chosen: category_or_type,
+                        "type_count": "Sub Count",
+                        "total_count": "Total Count"
+                    })\
+                    .reset_index(drop=True)
+
+        result['Year-Quarter'] = result['Year'].astype('str') + " - " + result['Quarter'].astype('str')
+        return result.drop(columns=['Year', 'Quarter'])
+
     def last_year(self):
         """
         Finds the last year recorded
@@ -381,6 +506,14 @@ class QueryProcessorDuck:
         self.con.execute(sql_last_date)
         last_year = self.con.fetchone()[0]
         return last_year
+
+    def all_years(self):
+        """
+        Finds all year sorted
+        """
+        sql_last_date = """SELECT DISTINCT YEAR(time_stamp)from watch_history ORDER BY YEAR(time_stamp) DESC"""
+        self.con.execute(sql_last_date)
+        return [row[0] for row in self.con.fetchall()]
 
     def yearly_trend(self, video_type=None):
         df = self.table.copy()
