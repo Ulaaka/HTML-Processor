@@ -7,7 +7,7 @@ path_pagename_map_content = {
     "/content/interests": "Interests",
     "/content/format_mix": "Format Mix",
     "/content/format_trend": "Format Trend",
-    "/content/search_titles": "Search Titles",
+    "/content/heatmap": "Heatmap",
     "/content/unavailable": "Unavailable"
 }
 

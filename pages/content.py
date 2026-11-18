@@ -8,7 +8,7 @@ from .content_sub.favorite_words_topic import favorite_words_layout
 from .content_sub.format_mix_topic import format_mix_layout
 from .content_sub.format_trend_topic import format_trend_layout
 from .content_sub.interests_topic import interests_layout
-from .content_sub.search_titles_topic import search_titles_layout
+from .content_sub.heatmap_topic import heatmap_layout
 from .content_sub.unavailable_topic import unavailable_layout
 
 
@@ -28,7 +28,7 @@ def description(topic=None):
         return ""
     elif topic == "format_trend":
         return ""
-    elif topic == "search_titles":
+    elif topic == "heatmap":
         return ""
     elif topic == "unavailable":
         return ""
@@ -61,8 +61,8 @@ def layout(topic=None, **other_unknown_query_strings):
         topic_card =  format_mix_layout()
     elif topic == "format_trend":
         topic_card =  format_trend_layout()
-    elif topic == "search_titles":
-        topic_card =  search_titles_layout()
+    elif topic == "heatmap":
+        topic_card =  heatmap_layout()
     elif topic == "unavailable":
         topic_card =  unavailable_layout()
     else:

@@ -525,6 +525,45 @@ class QueryProcessorDuck:
         result['Change (Percentage %)'] = ((result['size'] / result['size'].shift().fillna(result['size']) * 100 ) - 100).round(2)
         return result.rename(columns = {'size' : 'Total Count'})
 
+    def yearly_trend_update(self, category_or_type, limit = 6):
+        """
+        Finds the trend given months
+        """
+
+        chosen = "video_category" if category_or_type == "Category" else "video_type"
+
+        df = self.table.copy()
+
+        df['year'] = df['time_stamp'].dt.year
+
+        df['ranked'] =  df['year'].rank(method = 'dense', ascending = False)
+
+        df = df[df['ranked'] <= limit]
+
+        df['yearly_start'] = df.groupby('year')['time_stamp'].transform('min').dt.strftime("%Y-%m-%d")
+        df['yearly_end'] = df.groupby('year')['time_stamp'].transform('max').dt.strftime("%Y-%m-%d")
+
+        daily = df.groupby(['year', chosen]).agg(
+            type_count=('historyID', 'nunique'), 
+            min_date=('yearly_start', 'first'), 
+            max_date=('yearly_end', 'first')
+        ).reset_index()
+
+        daily["total_count"] = daily.groupby('year')['type_count'].transform('sum')
+
+        result = daily.sort_values(["year", "total_count", "type_count"])\
+                    .rename(columns={
+                        "year": "Year",
+                        chosen: category_or_type,
+                        "type_count": "Sub Count",
+                        "total_count": "Total Count",
+                        "min_date" : 'Year Start',
+                        "max_date" : "Year End"
+                    })\
+                    .reset_index(drop=True)
+
+        return result
+
     def channel_life_cycle(self, channel):
 
         pass
@@ -596,12 +635,17 @@ class QueryProcessorDuck:
 
         return result
 
-    def max_time_of_the_day(self, lower_range=None, upper_range=None, video_type=None):
-        """Finds the time of the day where the most videos/reel are watched"""
+    def time_of_the_day(self, lower_range=None, upper_range=None, video_type=None, video_category = None):
+        """
+        Total count for each of the hour
+        """
 
         df = self.date_range_handler(lower_range, upper_range, as_dataframe=True)
         if video_type:
             df = df[df['video_type'] == video_type]
+
+        if video_category:
+            df = df[df['video_category'] == video_category]
 
         result = df.assign(hour = df['time_stamp'].dt.hour).groupby('hour', as_index = False).size()\
                 .sort_values('size', ascending=False).rename(columns={'size' : 'Total Count'}).reset_index(drop = True)
@@ -819,3 +863,47 @@ class QueryProcessorDuck:
 
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index().head(video_limit)
+
+    def calendar_heatmap(self, year, video_category = None, video_type = None):
+
+        month_order = [
+            'January', 'February', 'March', 'April', 'May', 'June', 
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ]
+        day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+        df = self.table.copy()
+        df = df[df['time_stamp'].dt.year == year]
+
+        if video_category:
+            df = df[df['video_category'] == video_category]
+
+        if video_type:
+            df = df[df['video_type'] == video_type]
+
+        if df.empty:
+            return pd.DataFrame(0, index=pd.CategoricalIndex(day_order, categories=day_order, ordered=True),
+                columns=pd.CategoricalIndex(month_order, categories=month_order, ordered=True)
+            )
+        df['Date'] = df['time_stamp'].dt.normalize()
+
+        df = df.groupby('Date').size()
+
+        dates = pd.date_range(start=df.index.min(), end=df.index.max())
+
+        df = df.reindex(dates, fill_value=0).rename_axis('Date').reset_index(name='Total Count')
+
+        df = df.assign(
+            month_name = pd.Categorical(df['Date'].dt.month_name(), categories=month_order, ordered=True),
+            day_name = pd.Categorical(df['Date'].dt.day_name(), categories=day_order, ordered=True),
+        )
+
+        pivot_df = df.pivot_table(
+            index="day_name", 
+            columns="month_name", 
+            values="Total Count", 
+            aggfunc='sum',
+            fill_value=0
+        )
+
+        return pivot_df
