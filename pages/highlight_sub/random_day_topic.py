@@ -1,8 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
-from dash import html, dash_table, dcc, Output, Input, callback, State
-from visual_functions import TABLE_STYLE, table, line_graph
-import plotly.express as px
+from dash import html, dcc, Output, Input, callback, State
+from visual_functions import table, line_graph
 
 def random_day_layout():
     random_date  = query.random_date()

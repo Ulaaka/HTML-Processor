@@ -2,8 +2,6 @@ import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import bar_graph, table
-from datetime import date
-import plotly.express as px
 from html_parser import category_mapping
 
 def format_trend_layout():

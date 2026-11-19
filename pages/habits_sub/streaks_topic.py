@@ -3,8 +3,6 @@ from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import table, streaks_graph
 from datetime import date
-from html_parser import category_mapping
-import plotly.express as px
 import pandas as pd
 
 def streaks_layout():

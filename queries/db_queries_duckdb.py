@@ -1,7 +1,6 @@
 
 from nltk.corpus import stopwords
-import re, time
-from datetime import datetime
+import re
 import pandas as pd
 import numpy as np
 

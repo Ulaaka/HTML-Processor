@@ -2,10 +2,11 @@
 from database.database_connection import Database
 from nltk.corpus import stopwords
 import re
-from datetime import timedelta, datetime
+from datetime import  datetime
 import pandas as pd 
 from typing import Literal
 import numpy as np
+
 """
 Needs to be divided into separate files.
 Some of the funcs can be combines and better explained

@@ -3,10 +3,7 @@ import plotly.express as px
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import dash_table, dcc, html
-from plotly.subplots import make_subplots
-import dash_bootstrap_components as dbc
-
+from dash import dash_table
 
 # ---- Table ----
 TABLE_STYLE = dict(

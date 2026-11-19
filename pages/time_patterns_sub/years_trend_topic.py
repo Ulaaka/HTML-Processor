@@ -2,9 +2,6 @@ import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import table, bar_graph
-from datetime import date
-from html_parser import category_mapping
-import plotly.express as px
 
 def years_trend_layout():
     return html.Div([

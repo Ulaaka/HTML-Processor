@@ -3,8 +3,8 @@ from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import table, pie_graph
 from datetime import date
-import plotly.express as px
 from html_parser import category_mapping
+
 def format_mix_layout():
     first_day = query.first_day()
     last_day = query.last_day()

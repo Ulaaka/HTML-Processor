@@ -2,10 +2,7 @@ import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import table, heatmap_graph
-from datetime import date
 from html_parser import category_mapping
-import plotly.express as px
-import plotly.graph_objects as go
 
 def heatmap_layout():
     years = query.all_years()

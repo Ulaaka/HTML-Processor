@@ -3,8 +3,6 @@ from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import bar_graph, table
 from datetime import date
-from html_parser import category_mapping
-import plotly.express as px
 
 def busiest_weeks_layout():
 

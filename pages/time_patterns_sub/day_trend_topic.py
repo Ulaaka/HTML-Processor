@@ -1,11 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
-from dash import html, dcc, callback, Output, Input, dash_table
+from dash import html, dcc, callback, Output, Input
 from visual_functions import table, line_graph
-from datetime import date
-from html_parser import category_mapping
-import plotly.express as px
-import pandas as pd
 
 def day_trend_layout():
     first_day = query.first_day()

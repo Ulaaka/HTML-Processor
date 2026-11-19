@@ -3,7 +3,6 @@ from queries.query_connection import query
 import dash_bootstrap_components as dbc
 from dash import html, Input, Output, dcc, callback
 from visual_functions import table, hbar
-from datetime import date
 from html_parser import category_mapping
 
 def longest_titles_layout():

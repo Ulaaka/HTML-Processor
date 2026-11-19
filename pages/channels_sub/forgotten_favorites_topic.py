@@ -3,7 +3,6 @@ from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
 from visual_functions import table, scatter_graph
 from datetime import date
-import plotly.express as px
 
 def forgotten_favorites_layout():
     first_day = query.first_day()
