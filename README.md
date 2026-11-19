@@ -1,25 +1,18 @@
 <h1 align="center">YouTube Watch History Analyser</h1>
 
 <p align="center">
-  A Dash dashboard that turns your Google Takeout watch history into interactive charts.
-</p>
-
-<p align="center">
-  <img alt="Dash" src="https://img.shields.io/badge/Dash-Plotly-3F4F75?logo=plotly&logoColor=white">
-  <img alt="pandas" src="https://img.shields.io/badge/pandas-data%20processing-150458?logo=pandas&logoColor=white">
-  <img alt="DuckDB" src="https://img.shields.io/badge/DuckDB-supported-FFF000?logo=duckdb&logoColor=black">
-  <img alt="MySQL" src="https://img.shields.io/badge/MySQL-supported-4479A1?logo=mysql&logoColor=white">
+  Dashboard which turns your Youtube Watch History into interactive charts
 </p>
 
 <!-- Add a screenshot or GIF of the dashboard here, e.g.:
 ![Dashboard preview](docs/preview.png)
 -->
 
-Everything runs locally (the only thing sent out is the list of video IDs, to the YouTube Data API for durations and categories). Export your YouTube watch history, load it once, and explore what you watch, when you watch it, which channels you keep coming back to, and how your habits change over time.
+ Export your YouTube watch history, load it once, and explore what you watch, when you watch it, which channels you keep coming back to, and how your habits change over time.
 
-**Pipeline:** parse the HTML → enrich every video through the YouTube Data API → store it in a database → query with SQL + pandas → plot with Dash.
+**Pipeline:** parse the HTML → with YouTube Data API enrich videos→ store it in a DB → query with (SQL + pandas) → plot with Dash.
 
-## Table of contents
+## Contents
 
 - [Key features](#key-features)
 - [Project structure](#project-structure)
@@ -52,13 +45,12 @@ Both use the same `watch_history` schema and a `UNIQUE (video_url, time_stamp)` 
 
 ### Processing with pandas + SQL
 
-SQL does the heavy lifting where it is naturally good at it (aggregations, `RANK() OVER (PARTITION BY ...)` for "top channel per month"), and pandas handles the rest (tokenising titles for the favourite-words chart, reshaping for heatmaps and trends, streak calculations).
+SQL was used wherever it is naturally good at it (aggregations, `RANK() OVER (PARTITION BY ...)` etc., and pandas handles the rest.
 
-> **Note:** Polars could be used instead of pandas, but for a dataset of this size (tens of thousands of rows) the difference would be negligible, so I stuck with pandas.
+Instead of pandas, polars can be used, but given the size of the file, the difference would be marginal, so i stuck to pandas.
 
 ### Graphs, organised as a tree
-
-The dashboard uses Dash multi-page routing. Each page has a sidebar, and each sidebar entry is its own graph.
+Here is the tree structure of Dash pages.
 
 ```
 Home
@@ -102,22 +94,22 @@ Home
 
 ```
 .
-├── app.py                  # Dash entry point (navbar + page container)
-├── requests.py             # YouTube Data API calls (async batch requests)
+├── app.py                  # Dash entry
+├── requests.py             # YouTube Data API calls
 ├── html_parser.py          # BeautifulSoup parsing + enrichment
 ├── html_processor.py       # Inserts the parsed list into DuckDB
-├── query_connection.py     # Picks the database backend, exposes `query`
+├── query_connection.py     # Exposes `query`
 ├── database/
-│   ├── database_connection_duckdb.py
+│   ├── database_connection_duckdb.py # DuckDB
 │   └── database_connection.py      # MySQL
 ├── queries/
 │   ├── db_queries_duckdb.py
 │   └── db_queries.py               # MySQL
-├── database_creation       # MySQL schema (+ DuckDB translation)
+├── database_creation       # MySQL schema and DuckDB translation)
 ├── pages/
 │   ├── home.py
 │   ├── highlight.py
-│   ├── highlight_sub/      # one file per sidebar topic
+│   ├── highlight_sub/
 │   ├── channels.py
 │   ├── channels_sub/
 │   ├── content.py
@@ -126,24 +118,19 @@ Home
 │   ├── time_patterns_sub/
 │   ├── habits.py
 │   └── habits_sub/
-├── watch_history.duckdb    # created automatically on first run (git-ignored)
-├── .env                    # create this yourself (git-ignored)
-└── data_folder/            # create this yourself (git-ignored)
-    └── watch-history.html  # your Takeout export
+├── watch_history.duckdb    # created automatically on first run
+├── .env                    # needs to be created (git-ignored)
+└── data_folder/            # needs to be created (git-ignored)
+    └── watch-history.html  # your watch history
 ```
-
-> `data_folder/`, `.env` and `*.duckdb` are listed in `.gitignore` because they hold personal data and secrets. They will **not** exist after you clone the repo, so you need to create them yourself (see [Installation](#installation)).
-
----
 
 ## Installation
 
 ### 1. Clone and install dependencies
 
-```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+`mysql-connector-python` is only needed if you choose the MySQL option.
 
+```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
@@ -152,15 +139,13 @@ pip install dash dash-bootstrap-components pandas numpy nltk \
             python-decouple duckdb mysql-connector-python
 ```
 
-`mysql-connector-python` is only needed if you choose the MySQL option.
-
-Download the NLTK stop-word list once (used by the "favourite words" chart):
+Download the NLTK stop-word list once:
 
 ```bash
 python -c "import nltk; nltk.download('stopwords')"
 ```
 
-### 2. Get your watch history
+### 2. Step by step on how to get your watch history
 
 1. Go to [Google Takeout](https://takeout.google.com/).
 2. Deselect everything, then select **YouTube and YouTube Music**.
@@ -173,9 +158,9 @@ python -c "import nltk; nltk.download('stopwords')"
    cp /path/to/Takeout/YouTube\ and\ YouTube\ Music/history/watch-history.html data_folder/
    ```
 
-   The code expects the file at exactly `data_folder/watch-history.html`.
+   It expects the file at exactly `data_folder/watch-history.html`.
 
-### 3. Get a YouTube Data API key
+### 3. Youtube API key and env
 
 Create a key in the [Google Cloud Console](https://console.cloud.google.com/) (enable **YouTube Data API v3**), then create a `.env` file in the project root (it is git-ignored, so it is not part of the repo):
 
@@ -188,9 +173,6 @@ DATABASE_USER=root
 DATABASE_PASSWORD=your_password
 DATABASE_NAME=youtube_database
 ```
-
-> **Privacy:** your watch history is personal. `.env`, `data_folder/` and `*.duckdb` are already in `.gitignore`, so your API key, your history and your database stay on your machine. If you fork this repo, don't remove those entries.
-
 ---
 
 ## Connecting to the database (2 ways)
@@ -302,4 +284,4 @@ Re-running the loader with the same file is safe. Duplicate `(video_url, time_st
 
 ## Conclusion
 
-This was a fun project. I got to work with async requests, scraping a big HTML export, two very different databases, and, best of all, Dash for building the graphs. It turned a pile of raw Takeout HTML into something I actually enjoy exploring.
+This was a fun project that helped me better understand async requests, scraping HTML files using Beautifulsoup, working with 2 different databases, and, lastly, working with Dash Plotly to build the graphs.
