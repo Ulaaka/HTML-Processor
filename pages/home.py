@@ -6,7 +6,6 @@ from visual_functions import TABLE_STYLE, table
 
 dash.register_page(__name__, path="/", name="Home")
 
-# Load once when the app starts
 df = (
     query.table.copy()
     .rename(columns={
