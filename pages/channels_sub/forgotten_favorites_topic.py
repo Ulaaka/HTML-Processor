@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import table
+from visual_functions import table, scatter_graph
 from datetime import date
 import plotly.express as px
 
@@ -44,5 +44,5 @@ def update_table(value, start_date, end_date):
 
     df = query.the_longest_untouched_channel(limit=value, lower_range=start_date, upper_range=end_date)
 
-    figure = px.scatter(df, x="Since Last Watched", y="Total Watch", size="Neglect Score", hover_name="Channel Name", size_max=40)
+    figure = scatter_graph(graph_df=df, x_axis="Since Last Watched", y_axis="Total Watch", size_value="Neglect Score", hover_value="Channel Name")
     return figure , [dbc.AccordionItem(table(table_df=df, url="URL"), title="Show data")]

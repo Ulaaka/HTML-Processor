@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, clock
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -53,12 +53,4 @@ def update_graph(video_category, video_type, start_date, end_date):
 
     df = query.time_of_the_day(lower_range=start_date, upper_range=end_date, video_type=video_type, video_category=video_category)
 
-    s = df.set_index("hour")["Total Count"].reindex(range(24), fill_value=0)
-    figure = go.Figure(go.Barpolar(r=s.values, theta=[h * 15 + 7.5 for h in s.index], width=15,
-                                hovertext=[f"{h}:00" for h in s.index], hoverinfo="text+r"))
-    figure.update_layout(polar=dict(
-        angularaxis=dict(direction="clockwise", rotation=90, tickvals=list(range(0, 360, 45)),
-                         ticktext=[f"{h}:00" for h in range(0, 24, 3)]),
-        radialaxis=dict(showticklabels=False, gridcolor="#e9ecef")))
-
-    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]
+    return clock(df), [dbc.AccordionItem(table(table_df=df), title="Show Table")]

@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, heatmap_graph
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -57,9 +57,6 @@ def update_graph(video_category, video_type, year, month):
 
     df = query.calendar_heatmap(year = year, month=month, video_category=video_category, video_type=video_type)
 
-    figure = px.imshow(
-        df,
-        labels=dict(x="Week Number", y="Week Day", color_continuous_scale="Greens")
-    )
+    figure = heatmap_graph(graph_df=df, x_label="Week Number", y_label="Week Day")
 
     return figure, [dbc.AccordionItem(table(df), title="Show data")]

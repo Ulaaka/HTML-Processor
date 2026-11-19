@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, pie_graph
 from datetime import date
 import plotly.express as px
 from html_parser import category_mapping
@@ -49,9 +49,6 @@ def update_table(start_date, end_date, category):
 
     df = query.video_length_preference(video_category=category, lower_range=start_date, upper_range=end_date)
 
-    pie_figure = px.pie(df, values=df['Total Count'], names=df['Type'], hole=.3)
+    figure = pie_graph(graph_df=df,value_col=df['Total Count'], name_col=df['Type'])
 
-    if df.empty:
-        pie_figure = pie_figure.add_annotation(text="No data for the selected filters", showarrow=False)
-
-    return pie_figure , [dbc.AccordionItem(table(df), title="Show data")]
+    return figure , [dbc.AccordionItem(table(df), title="Show data")]

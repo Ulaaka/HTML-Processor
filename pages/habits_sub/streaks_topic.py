@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, streaks_graph
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -45,7 +45,6 @@ def update_graph(limit, start_date, end_date):
 
     df = df.assign(Start = pd.to_datetime(df["Start"]), End = pd.to_datetime(df["End"]) + pd.Timedelta(days=1), Streak = [f"{n} days" for n in df["Total Days"]])
 
-    figure = px.timeline(df, x_start="Start", x_end="End", y="Streak", color="Total Days", color_continuous_scale="Blues")\
-                    .update_yaxes(autorange="reversed", title=None)
+    figure = streaks_graph(graph_df=df, x_start="Start", x_end="End", y_axis="Streak", chosen="Total Days")
 
     return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

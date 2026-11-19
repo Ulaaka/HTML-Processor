@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, generic_bar
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -48,6 +48,6 @@ def update_graph(start_date, end_date, category_or_type):
 
     df = df.melt(id_vars=category_or_type, var_name="Day type", value_name="Average")
 
-    figure = px.bar(df, x=category_or_type, y="Average", color="Day type", barmode="group")
+    figure = generic_bar(graph_df=df, x_axis=category_or_type, y_axis="Average", chosen="Day type")
 
     return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

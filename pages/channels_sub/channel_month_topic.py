@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import table
+from visual_functions import table, generic_bar
 from datetime import date
 import plotly.express as px
 
@@ -40,4 +40,5 @@ def update_table(start_date, end_date):
 
     df = query.most_watched_channel_per_month(lower_range=start_date, upper_range=end_date)
 
-    return px.bar(df, x ='Year - Month', y='Total Watch', color="Channel Name", barmode="group").update_layout(height=420) , [dbc.AccordionItem(table(df), title="Show data")]
+    figure = generic_bar(graph_df=df, x_axis='Year - Month', y_axis='Total Watch', chosen="Channel Name")
+    return figure, [dbc.AccordionItem(table(df), title="Show data")]
