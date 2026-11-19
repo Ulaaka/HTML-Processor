@@ -18,7 +18,7 @@ TABLE_STYLE = dict(
 )
 
 def table(table_df, url=None, accordion = True, search = None):
-
+    table_df = table_df.copy()
     if url is None:
         url = []
 
