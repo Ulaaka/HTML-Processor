@@ -216,9 +216,8 @@ class QueryProcessorDuck:
                                     chosen: category_or_type,   "type_count": "Sub Count",
                                     "total_count": "Total Count"
                                     })\
-                    .sort_values('Date').reset_index()
+                    .sort_values('Date').reset_index(drop = True)
         return result
-
     def unique_type_find(self):
 
         type_set = set()
@@ -857,14 +856,14 @@ class QueryProcessorDuck:
         if video_category:
             df = df[df['video_category'] == video_category]
 
-        df = df.assign(length_video = df['video_name'].str.len())[['video_name', 'video_url', 'video_type', 'length_video']]\
+        df = df.assign(length_video = df['video_name'].str.len())[['video_name', 'video_url', 'video_type', 'length_video', 'time_stamp']]\
                 .sort_values('length_video', ascending = False)\
-                .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'length_video' : 'Title Length'})
+                .rename(columns = {'video_name' : 'Name', 'video_url' : 'URL', 'length_video' : 'Title Length', 'time_stamp' : 'Timestamp'})
 
         df.index = np.arange(1, len(df) + 1)
         return df.reset_index().head(video_limit)
 
-    def calendar_heatmap(self, year, video_category = None, video_type = None):
+    def calendar_heatmap(self, year, month, video_category = None, video_type = None):
 
         month_order = [
             'January', 'February', 'March', 'April', 'May', 'June', 
@@ -873,7 +872,7 @@ class QueryProcessorDuck:
         day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
         df = self.table.copy()
-        df = df[df['time_stamp'].dt.year == year]
+        df = df[(df['time_stamp'].dt.year == year) & (df['time_stamp'].dt.month_name() == month)]
 
         if video_category:
             df = df[df['video_category'] == video_category]
@@ -885,6 +884,7 @@ class QueryProcessorDuck:
             return pd.DataFrame(0, index=pd.CategoricalIndex(day_order, categories=day_order, ordered=True),
                 columns=pd.CategoricalIndex(month_order, categories=month_order, ordered=True)
             )
+
         df['Date'] = df['time_stamp'].dt.normalize()
 
         df = df.groupby('Date').size()
@@ -894,16 +894,25 @@ class QueryProcessorDuck:
         df = df.reindex(dates, fill_value=0).rename_axis('Date').reset_index(name='Total Count')
 
         df = df.assign(
-            month_name = pd.Categorical(df['Date'].dt.month_name(), categories=month_order, ordered=True),
+            week_number = df['Date'].apply(lambda x : (x.day - 1)//7+1),
             day_name = pd.Categorical(df['Date'].dt.day_name(), categories=day_order, ordered=True),
         )
 
         pivot_df = df.pivot_table(
-            index="day_name", 
-            columns="month_name", 
-            values="Total Count", 
+            index="day_name",
+            columns="week_number",
+            values="Total Count",
             aggfunc='sum',
             fill_value=0
         )
 
         return pivot_df
+
+    def all_months(self, year):
+        df = self.table.copy()
+        df = df[df['time_stamp'].dt.year == year]
+        df = df.assign(
+            month_name = df['time_stamp'].dt.month_name(),
+            month_number = df['time_stamp'].dt.month
+            ).sort_values("month_number").drop_duplicates(subset = 'month_number')[['month_name']].reset_index(drop = True)
+        return df['month_name'].to_list()

@@ -1,16 +1,16 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dash_table, dcc, Output, Input, callback, State
-from visual_functions import TABLE_STYLE
+from visual_functions import TABLE_STYLE, table
 import plotly.express as px
 
 def random_day_layout():
     random_date  = query.random_date()
     return html.Div([
-        dbc.Card("Shows Random Day Activity", body=True, className="mt-2"),
-        html.Br(),
+        dbc.Card("Shows Random Day Activity", body=True),
         dcc.Store(id="day_random", data=random_date),
         html.Br(),
+        html.H6("Filter By:", className="content"),
         dcc.Dropdown(id='dropdown_random_day',
                 options=["Category", "Type"],
                 value='Category', clearable=False
@@ -19,13 +19,12 @@ def random_day_layout():
         dcc.Graph(id = "graph_random"),
         html.Br(),
         dcc.Input(id="search_random_day", type="text", placeholder="Search"),
-        dash_table.DataTable(id="table_random", **TABLE_STYLE)
+        dbc.Accordion(id='table_random', start_collapsed=True, flush=True)
     ])
 
 @callback(
-    Output("table_random", "data"),
-    Output("table_random", "columns"),
     Output("graph_random", "figure"),
+    Output("table_random", "children"),
     Input("dropdown_random_day", "value"),
     Input("search_random_day", "value"),
     State("day_random", "data")
@@ -46,15 +45,4 @@ def update(category_or_type, search, day):
         legend_title_text=category_or_type,
     )
 
-    if search:
-        table_df = table_df[table_df.astype(str).apply(lambda row: row.str.contains(search, case=False)).any(axis=1)]
-
-    cols = [
-        {"name": str(c), "id": str(c),
-         **({"presentation": "markdown"} if c == "URL" else {})}
-        for c in table_df.columns
-    ]
-
-    table_df["URL"] = table_df["URL"].apply(lambda u: f"[open]({u})")
-
-    return table_df.to_dict("records"), cols, figure
+    return figure, [dbc.AccordionItem(table(table_df=table_df, url='URL', search=search), title="Show Table")]

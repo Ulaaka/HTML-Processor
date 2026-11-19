@@ -42,9 +42,7 @@ def update_table(value, start_date, end_date):
     if end_date:
         end_date = date.fromisoformat(end_date).strftime('%Y-%m-%d')
 
-#{'channel_name': 'Channel Name', 'channel_url' : 'URL', 'total_count' : 'Total Watch', 'days_since_last' : 'Since Last Watched', 'neglect_score' : 'Neglect Score'}
-
     df = query.the_longest_untouched_channel(limit=value, lower_range=start_date, upper_range=end_date)
 
     figure = px.scatter(df, x="Since Last Watched", y="Total Watch", size="Neglect Score", hover_name="Channel Name", size_max=40)
-    return figure , [dbc.AccordionItem(table(df), title="Show data")]
+    return figure , [dbc.AccordionItem(table(table_df=df, url="URL"), title="Show data")]

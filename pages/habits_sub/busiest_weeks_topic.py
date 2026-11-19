@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import bar_graph, table
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -53,15 +53,6 @@ def update_graph(limit, start_date, end_date, chosen):
         lower_range=start_date,
         upper_range=end_date,
     )
+    figure = bar_graph(df, chosen, x_axis='Week' , y_axis='Sub Count', hover='Total Count')
 
-    figure = px.bar(
-        df,
-        x='Week',
-        y='Sub Count',
-        color=chosen,
-        barmode='stack',
-        hover_data=['Total Count'],
-    )
-    figure.update_xaxes(type='category')
-
-    return figure, [dbc.AccordionItem(table(df), title="Show data")]
+    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

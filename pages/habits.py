@@ -42,7 +42,6 @@ dash.register_page(
 
 
 def layout(topic=None, **other_unknown_query_strings):
-    parent_card =  dbc.Card(" Here is the main Habits Page content", body=True)
 
     if topic == "busiest_days":
         topic_card =  busiest_days_layout()
@@ -58,6 +57,6 @@ def layout(topic=None, **other_unknown_query_strings):
         topic_card= ""
 
     return dbc.Row(
-        [dbc.Col(sidebar_habits(f"/habits/{topic}"), width=2), dbc.Col([parent_card, topic_card], width=10)]
+        [dbc.Col(sidebar_habits(f"/habits/{topic}"), width=2), dbc.Col([topic_card], width=10)]
     )
 

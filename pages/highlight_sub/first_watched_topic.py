@@ -1,26 +1,30 @@
 
 from queries.query_connection import query
 from dash import html, Input, Output, dash_table, dcc, callback
-from visual_functions import TABLE_STYLE
+from visual_functions import TABLE_STYLE, table
 from html_parser import category_mapping
+import dash_bootstrap_components as dbc
 
 def first_watched_layout():
     return html.Div([
-        html.H6("Rows to show:"),
+        dbc.Card("Shows Firs Watched Content Based On Filters", body=True),
+        html.Br(),
+        html.H6("Rows to show:", className="content"),
         dcc.Input(id="rows_to_show_first", value=20, type="number", min=1),
         html.Br(),
-        html.P("Category:"),
+        html.Br(),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_first_watched_category',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False
         ),
         html.Br(),
-        html.P("Video Type:"),
+        html.H6("Video Type:", className="content"),
         dcc.Dropdown(id='dropdown_first_watched_type',
                 options=['All', 'Video', 'Reel', 'Unavailable'],
                 value='All', clearable=False
         ),
-        html.H6("Search:"),
+        html.Br(),
         dcc.Input(id="search_first", type="text", placeholder="Search"),
         html.Br(),
         dash_table.DataTable(
@@ -48,15 +52,5 @@ def update_table(rows, search, video_category, video_type):
 
     df = query.first_last_videos_ever_watched(rows, video_category=video_category, video_type=video_type, first_or_last=True)
 
-    if search:
-        df = df[df.astype(str).apply(lambda row: row.str.contains(search, case=False)).any(axis=1)]
-
-    cols = [
-        {"name": str(c), "id": str(c),
-         **({"presentation": "markdown"} if c == "URL" else {})}
-        for c in df.columns
-    ]
-
-    df["URL"] = df["URL"].apply(lambda u: f"[open]({u})")
-
-    return df.to_dict("records"), cols
+    data, cols = table(table_df=df, url='URL', accordion=False, search=search)
+    return data, cols

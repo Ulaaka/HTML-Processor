@@ -62,4 +62,4 @@ def update_table(value, start_date, end_date, video_category, video_type):
 
     df = query.the_most_watched_videos(limit=value, video_type=video_type, video_category = video_category, lower_range=start_date, upper_range=end_date)
 
-    return hbar(df, x ='Total Watch', y="Name").update_layout(height=420) , [dbc.AccordionItem(table(df), title="Show data")]
+    return hbar(df, x ='Total Watch', y="Name").update_layout(height=420) , [dbc.AccordionItem(table(df, url="URL"), title="Show data")]

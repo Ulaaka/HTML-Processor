@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, bar_graph
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -32,14 +32,6 @@ def months_trend_layout():
 def update_graph(limit, chosen):
     df = query.monthly_trend_updated(category_or_type=chosen, limit=limit)
 
-    figure = px.bar(
-        df,
-        x='Month',
-        y='Sub Count',
-        color=chosen,
-        barmode='stack',
-        hover_data=['Total Count'],
-    )
-    figure.update_xaxes(type='category')
+    figure = bar_graph(df, chosen, x_axis='Month' , y_axis='Sub Count', hover="Total Count")
 
-    return figure, [dbc.AccordionItem(table(df), title="Show data")]
+    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

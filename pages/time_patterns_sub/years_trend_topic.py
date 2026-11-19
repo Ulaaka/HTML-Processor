@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import table, bar_graph
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
@@ -26,15 +26,6 @@ def years_trend_layout():
 )
 def update_graph(chosen):
     df = query.yearly_trend_update(category_or_type=chosen)
+    figure = bar_graph(df, chosen, x_axis='Year' , y_axis='Sub Count', hover=['Total Count', "Year Start", "Year End"])
 
-    figure = px.bar(
-        df,
-        x='Year',
-        y='Sub Count',
-        color=chosen,
-        barmode='stack',
-        hover_data=['Total Count', "Year Start", "Year End"],
-    )
-    figure.update_xaxes(type='category')
-
-    return figure, [dbc.AccordionItem(table(df), title="Show data")]
+    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

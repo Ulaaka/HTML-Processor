@@ -61,4 +61,4 @@ def update_graph(video_category, video_type, start_date, end_date):
                          ticktext=[f"{h}:00" for h in range(0, 24, 3)]),
         radialaxis=dict(showticklabels=False, gridcolor="#e9ecef")))
 
-    return figure, [dbc.AccordionItem(table(df), title="Show data")]
+    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

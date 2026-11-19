@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input, dash_table
-from visual_functions import TABLE_STYLE
+from visual_functions import TABLE_STYLE, table
 from datetime import date
 
 def unavailable_layout():
@@ -42,15 +42,6 @@ def update_table(search, start_date, end_date):
 
     df = query.unavailable_videos(lower_range=start_date, upper_range=end_date)
 
-    if search:
-        df = df[df.astype(str).apply(lambda row: row.str.contains(search, case=False)).any(axis=1)]
+    data, cols = table(table_df=df, url="Channel URL", search=search, accordion=False)
 
-    cols = [
-        {"name": str(c), "id": str(c),
-         **({"presentation": "markdown"} if c == "Channel URL" else {})}
-        for c in df.columns
-    ]
-
-    df["Channel URL"] = df["Channel URL"].apply(lambda u: f"[open]({u})")
-
-    return df.to_dict("records"), cols
+    return data, cols

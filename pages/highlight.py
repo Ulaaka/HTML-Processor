@@ -39,7 +39,6 @@ dash.register_page(
 
 
 def layout(topic=None, **other_unknown_query_strings):
-    parent_card =  dbc.Card(" Here is the main Highlight Page content", body=True)
 
     if topic == "first_watched":
         topic_card =  first_watched_layout()
@@ -53,6 +52,6 @@ def layout(topic=None, **other_unknown_query_strings):
         topic_card= ""
 
     return dbc.Row(
-        [dbc.Col(sidebar_highlight(f"/highlight/{topic}"), width=2), dbc.Col([parent_card, topic_card], width=10)]
+        [dbc.Col(sidebar_highlight(f"/highlight/{topic}"), width=2), dbc.Col([topic_card], width=10)]
     )
 

@@ -48,4 +48,4 @@ def update_graph(limit, start_date, end_date):
     figure = px.timeline(df, x_start="Start", x_end="End", y="Streak", color="Total Days", color_continuous_scale="Blues")\
                     .update_yaxes(autorange="reversed", title=None)
 
-    return figure, [dbc.AccordionItem(table(df), title="Show data")]
+    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

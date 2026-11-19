@@ -43,4 +43,4 @@ def update_table(value, start_date, end_date):
 
     df = query.the_most_watched_channel(limit=value, lower_range=start_date, upper_range=end_date)
 
-    return hbar(df, x ="Total Watch", y="Channel Name").update_layout(height=420) , [dbc.AccordionItem(table(df), title="Show data")]
+    return hbar(df, x ="Total Watch", y="Channel Name").update_layout(height=420) , [dbc.AccordionItem(table(table_df=df, url = "URL"), title="Show data")]

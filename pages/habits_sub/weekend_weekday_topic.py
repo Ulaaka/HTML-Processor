@@ -50,4 +50,4 @@ def update_graph(start_date, end_date, category_or_type):
 
     figure = px.bar(df, x=category_or_type, y="Average", color="Day type", barmode="group")
 
-    return figure, [dbc.AccordionItem(table(df), title="Show data")]
+    return figure, [dbc.AccordionItem(table(table_df=df), title="Show Table")]

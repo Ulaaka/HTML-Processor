@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input
-from visual_functions import hbar, table
+from visual_functions import bar_graph, table
 from datetime import date
 import plotly.express as px
 from html_parser import category_mapping
@@ -30,8 +30,8 @@ def update_graph(video_category):
         video_category = None
 
     df = query.video_length_trend_over_month(video_category=video_category)
+    df = df.melt(id_vars="Video Type", var_name="Month", value_name="Videos")
 
-    figure = px.bar(df.melt(id_vars="Video Type", var_name="Month",
-                    value_name="Videos"),
-            x="Month", y="Videos", color="Video Type")
+    figure = bar_graph(df, "Video Type", x_axis='Month' , y_axis='Videos', hover='')
+
     return figure, [dbc.AccordionItem(table(df), title="Show data")]

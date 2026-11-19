@@ -1,10 +1,11 @@
 import dash_bootstrap_components as dbc
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input, dash_table
-from visual_functions import hbar, table, TABLE_STYLE
+from visual_functions import table, TABLE_STYLE
 from datetime import date
 from html_parser import category_mapping
 import plotly.express as px
+import pandas as pd
 
 def day_trend_layout():
     first_day = query.first_day()
@@ -28,13 +29,12 @@ def day_trend_layout():
         dcc.Graph(id = "graph_day_trend"),
         html.Br(),
         dcc.Input(id="search_day_trend", type="text", placeholder="Search"),
-        dash_table.DataTable(id="table_day_trend", **TABLE_STYLE)
+        dbc.Accordion(id='table_day_trend', start_collapsed=True, flush=True)
     ])
 
 @callback(
-    Output("table_day_trend", "data"),
-    Output("table_day_trend", "columns"),
     Output("graph_day_trend", "figure"),
+    Output("table_day_trend", "children"),
     Input("date_day_trend", "date"),
     Input("dropdown_day_trend", "value"),
     Input("search_day_trend", "value")
@@ -54,15 +54,4 @@ def update(day, category_or_type, search):
         legend_title_text=category_or_type,
     )
 
-    if search:
-        table_df = table_df[table_df.astype(str).apply(lambda row: row.str.contains(search, case=False)).any(axis=1)]
-
-    cols = [
-        {"name": str(c), "id": str(c),
-         **({"presentation": "markdown"} if c == "URL" else {})}
-        for c in table_df.columns
-    ]
-
-    table_df["URL"] = table_df["URL"].apply(lambda u: f"[open]({u})")
-
-    return table_df.to_dict("records"), cols, figure
+    return figure,  [dbc.AccordionItem(table(table_df, url="URL", search=search), title="Show Table")]

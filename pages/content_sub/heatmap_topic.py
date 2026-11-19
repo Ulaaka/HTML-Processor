@@ -16,6 +16,8 @@ def heatmap_layout():
                 options=years,
                 value=max(years), clearable=False
             ),
+        html.P("Month:"),
+        dcc.Dropdown(id='dropdown_heatmap_month'),
         html.P("Category:"),
         dcc.Dropdown(id='dropdown_heatmap_category',
                 options=['All'] + list(category_mapping.values()),
@@ -33,23 +35,31 @@ def heatmap_layout():
     ])
 
 @callback(
+    Output('dropdown_heatmap_month', 'options'),
+    Output('dropdown_heatmap_month', 'value'),
+    Input('dropdown_heatmap_year', 'value'))
+def set_months_options(selected_year):
+    options = query.all_months(selected_year)
+    return options, options[0]
+
+@callback(
     Output("heatmap_graph", "figure"),
     Output("heatmap_table", "children"),
     Input('dropdown_heatmap_category', "value"),
     Input('dropdown_heatmap_type', "value"),
-    Input('dropdown_heatmap_year', "value")
-
+    Input('dropdown_heatmap_year', "value"),
+    Input('dropdown_heatmap_month', "value")
 )
-def update_graph(video_category, video_type, year):
+def update_graph(video_category, video_type, year, month):
 
     video_category = None if video_category == 'All' else video_category
     video_type = None if video_type == 'All' else video_type.lower()
 
-    df = query.calendar_heatmap(year = year, video_category=video_category, video_type=video_type)
+    df = query.calendar_heatmap(year = year, month=month, video_category=video_category, video_type=video_type)
 
     figure = px.imshow(
         df,
-        labels=dict(x="Month", y="Week Day", color_continuous_scale="Greens")
+        labels=dict(x="Week Number", y="Week Day", color_continuous_scale="Greens")
     )
 
     return figure, [dbc.AccordionItem(table(df), title="Show data")]
