@@ -1,11 +1,11 @@
-data_folder/watch-history.html
-data_folder/search-history.html
+.env
+
+data_folder/*
+*.duckdb
+*.duckdb.wal
 
 .venv/
 __pycache__/
 *.pyc
-.DS_Store
 
-.env
-data_folder/
-*.lprof
+.DS_Store
