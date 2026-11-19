@@ -30,9 +30,7 @@ dash.register_page(
     path_template="/channels/<topic>",
     title=title,
     description=description,
-    # sets a default for the path variable
     path="/channels/most_watched",
-    # prevents showing a Page Not Found if someone enters /about in the browser
     redirect_from=["/channels", "/channels/"],
 )
 

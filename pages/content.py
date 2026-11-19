@@ -13,7 +13,6 @@ from .content_sub.unavailable_topic import unavailable_layout
 
 
 def title(topic=None):
-    # This will show in browser tab and the meta tags
     return f"Content page: {topic}"
 
 
@@ -41,9 +40,7 @@ dash.register_page(
     path_template="/content/<topic>",
     title=title,
     description=description,
-    # sets a default for the path variable
     path="/content/most_watched_content",
-    # prevents showing a Page Not Found if someone enters /about in the browser
     redirect_from=["/content", "/content/"],
 )
 

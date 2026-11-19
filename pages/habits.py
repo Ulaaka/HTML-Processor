@@ -10,7 +10,6 @@ from .habits_sub.weekend_weekday_topic import weekend_weekday_layout
 from .habits_sub.explorer_topic import explorer_layout
 
 def title(topic=None):
-    # This will show in browser tab and the meta tags
     return f"Habits page: {topic}"
 
 
@@ -34,9 +33,7 @@ dash.register_page(
     path_template="/habits/<topic>",
     title=title,
     description=description,
-    # sets a default for the path variable
     path="/habits/busiest_days",
-    # prevents showing a Page Not Found if someone enters /about in the browser
     redirect_from=["/habits", "/habits/"],
 )
 
