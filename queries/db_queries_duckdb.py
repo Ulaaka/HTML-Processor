@@ -562,14 +562,6 @@ class QueryProcessorDuck:
 
         return result
 
-    def channel_life_cycle(self, channel):
-
-        pass
-
-    def topic_obsession_cluster(self):
-
-        pass
-
     def interest_analysis(self, limit = 20, video_type=None, lower_range = None, upper_range = None):
 
         """

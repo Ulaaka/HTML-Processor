@@ -106,7 +106,6 @@ def line_graph(graph_df, chosen, title=None):
 
     return figure
 
-
 def pie_graph(graph_df, value_col, name_col):
     figure = px.pie(graph_df, values=value_col, names=name_col, hole=.3)
     if graph_df.empty:
