@@ -38,7 +38,6 @@
 |---|---|---|
 | **Type** | Embedded, column-oriented | Traditional client/server, row-oriented |
 | **Setup** | None, the file `watch_history.duckdb` is created automatically | Needs a running server, a database and credentials in `.env` |
-| **Good for** | Analytical queries (group-bys, windows, scans over a few columns) | Familiar setup, if you already run MySQL |
 | **Code** | `DatabaseDuck` + `QueryProcessorDuck` | `Database` + `QueryProcessor` |
 
 Both use the same `watch_history` schema and a `UNIQUE (video_url, time_stamp)` constraint, so re-importing the same file never creates duplicates (`INSERT IGNORE` in MySQL, `INSERT OR IGNORE` in DuckDB).
