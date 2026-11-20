@@ -13,7 +13,6 @@
 **Pipeline:** parse the HTML → with YouTube Data API enrich videos→ store it in a DB → query with (SQL + pandas) → plot with Dash.
 
 ## Contents
-
 - [Key features](#key-features)
 - [Project structure](#project-structure)
 - [Installation](#installation)
@@ -21,6 +20,7 @@
 - [Usage](#usage)
 - [Acknowledgements](#acknowledgements)
 - [Conclusion](#conclusion)
+- [Demo](#demo-video)
 
 ---
 
@@ -288,7 +288,7 @@ Re-running the loader with the same file is safe. Duplicate `(video_url, time_st
 This was a fun project that helped me better understand async requests, scraping HTML files using Beautifulsoup, working with 2 different databases, and, lastly, working with Dash Plotly to build the graphs.
 
 
-Demo video:
+## Demo video
 
 
 https://github.com/user-attachments/assets/8a8e0136-1eed-4ebb-9bad-c0299ee02e59
