@@ -10,7 +10,8 @@ def format_mix_layout():
     last_day = query.last_day()
 
     return html.Div([
-        html.P("Date Range:"),
+        dbc.Card("Composition of Video Formats During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_format_mix',
             min_date_allowed=first_day,
@@ -19,7 +20,7 @@ def format_mix_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.P("Category:"),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_format_fix',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False

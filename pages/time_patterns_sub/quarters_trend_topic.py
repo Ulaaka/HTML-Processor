@@ -6,15 +6,15 @@ from visual_functions import table, bar_graph
 def quarters_trend_layout():
     years = query.all_years()
     return html.Div([
-
+        dbc.Card(" Watch Activity For Selected Year By Quarters", body=True, className="mt-2"),
         html.Br(),
-        html.P("Year:"),
+        html.H6("Year:", className="content"),
         dcc.Dropdown(id='dropdown_quarter_trend_year',
                 options=years,
                 value=max(years), clearable=False
             ),
         html.Br(),
-        html.P("Show by:"),
+        html.H6("Show By:", className="content"),
         dcc.Dropdown(id='dropdown_quarter_trend_category',
                 options=['Category', 'Video Type'],
                 value='Category', clearable=False

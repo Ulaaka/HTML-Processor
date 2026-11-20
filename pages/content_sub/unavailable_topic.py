@@ -2,11 +2,14 @@ from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input, dash_table
 from visual_functions import TABLE_STYLE, table
 from datetime import date
+import dash_bootstrap_components as dbc
 
 def unavailable_layout():
     first_day = query.first_day()
     last_day = query.last_day()
     return html.Div([
+        dbc.Card("Unavailable Videos During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_unavailable_content',
             min_date_allowed=first_day,
@@ -15,7 +18,6 @@ def unavailable_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Search:"),
         dcc.Input(id="search_unavailable_content", type="text", placeholder="Search"),
         html.Br(),
         dash_table.DataTable(

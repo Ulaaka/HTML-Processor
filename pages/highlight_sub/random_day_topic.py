@@ -6,7 +6,7 @@ from visual_functions import table, line_graph
 def random_day_layout():
     random_date  = query.random_date()
     return html.Div([
-        dbc.Card("Shows Random Day Activity", body=True),
+        dbc.Card("Shows Random Day Watch Activity", body=True),
         dcc.Store(id="day_random", data=random_date),
         html.Br(),
         html.H6("Filter By:", className="content"),

@@ -6,7 +6,9 @@ from html_parser import category_mapping
 
 def format_trend_layout():
     return html.Div([
-        html.P("Category:"),
+        dbc.Card("Composition of Video Formats Per Month Over the Entire Duration", body=True, className="mt-2"),
+        html.Br(),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_format_trend',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False

@@ -20,7 +20,6 @@ def longest_titles_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Titles to show:", className="content"),
         dcc.Slider(5, 40, 5, value=20, id='rows_to_show_longest'),
         html.Br(),
         html.H6("Category:", className="content"),

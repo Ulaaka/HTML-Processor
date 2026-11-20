@@ -10,6 +10,8 @@ def streaks_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Longest Streaks During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='date_range_streak',
             min_date_allowed=first_day,

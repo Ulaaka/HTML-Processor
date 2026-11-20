@@ -1,8 +1,9 @@
 from queries.query_connection import query
 from dash import html, dcc, callback, Output, Input, dash_table
-from visual_functions import hbar, table, TABLE_STYLE
+from visual_functions import table, TABLE_STYLE
 from datetime import date
 from html_parser import category_mapping
+import dash_bootstrap_components as dbc
 
 def explorer_layout():
 
@@ -10,6 +11,8 @@ def explorer_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Explore Your Data", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_time',
             min_date_allowed=first_day,
@@ -20,19 +23,19 @@ def explorer_layout():
         html.Br(),
         dcc.Input(id="rows_to_show_time", value=20, type="number", min=1),
         html.Br(),
-        html.P("Time:"),
+        html.H6("Time:", className="content"),
         dcc.Dropdown(id='dropdown_time',
                 options=["All", "Morning", "Afternoon", "Evening", "Night"],
                 value='Morning', clearable=False
             ),
         html.Br(),
-        html.P("Category:"),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_time_category',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False
         ),
         html.Br(),
-        html.P("Video Type:"),
+        html.H6("Video Type:", className="content"),
         dcc.Dropdown(id='dropdown_time_type',
                 options=['All', 'Video', 'Reel', 'Unavailable'],
                 value='All', clearable=False

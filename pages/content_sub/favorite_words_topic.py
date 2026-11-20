@@ -9,6 +9,8 @@ def favorite_words_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Favorite Words During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_most_repeated_words',
             min_date_allowed=first_day,
@@ -17,16 +19,15 @@ def favorite_words_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Words to show:"),
         dcc.Slider(5, 40, 5, value=20, id='slider_most_repeated_words'),
         html.Br(),
-        html.P("Category:"),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_favorite_words_category',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False
         ),
         html.Br(),
-        html.P("Video Type:"),
+        html.H6("Video Type:", className="content"),
         dcc.Dropdown(id='dropdown_favorite_words_type',
                 options=['All', 'Video', 'Reel', 'Unavailable'],
                 value='All', clearable=False

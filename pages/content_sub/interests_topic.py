@@ -9,6 +9,8 @@ def interests_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Video Category Count During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_category_count',
             min_date_allowed=first_day,
@@ -17,7 +19,6 @@ def interests_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Categories to show:"),
         dcc.Slider(5, 40, 5, value=20, id='slider_category_count'),
         html.Br(),
         html.Div([

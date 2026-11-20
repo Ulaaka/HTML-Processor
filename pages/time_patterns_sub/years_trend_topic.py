@@ -5,8 +5,9 @@ from visual_functions import table, bar_graph
 
 def years_trend_layout():
     return html.Div([
+        dbc.Card(" Watch Activity For All Years", body=True, className="mt-2"),
         html.Br(),
-        html.P("Show by:"),
+        html.H6("Show By:", className="content"),
         dcc.Dropdown(id='dropdown_yearly_trend_category',
                 options=['Category', 'Video Type'],
                 value='Category', clearable=False

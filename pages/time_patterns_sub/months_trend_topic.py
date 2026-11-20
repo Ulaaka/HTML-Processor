@@ -6,11 +6,11 @@ from visual_functions import table, bar_graph
 def months_trend_layout():
 
     return html.Div([
-
+        dbc.Card(" Watch Activity For Each Selected Month", body=True, className="mt-2"),
         html.Br(),
         dcc.Slider(1, 12, 1, value=4, id='slider_months_trend'),
         html.Br(),
-        html.P("Show by:"),
+        html.H6("Show by:", className="content"),
         dcc.Dropdown(id='dropdown_months_trend',
                 options=['Category', 'Video Type'],
                 value='Category', clearable=False

@@ -10,6 +10,8 @@ def busiest_days_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Watch Activity For Busiest Days During Selected Period and Their Compositions", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_busiest_days',
             min_date_allowed=first_day,
@@ -20,7 +22,7 @@ def busiest_days_layout():
         html.Br(),
         dcc.Slider(5, 20, 1, value=10, id='slider_busiest_days'),
         html.Br(),
-        html.P("Show by:"),
+        html.H6("Show By:", className="content"),
         dcc.Dropdown(id='dropdown_busiest_days',
                 options=['Category', 'Video Type'],
                 value='Category', clearable=False

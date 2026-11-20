@@ -7,7 +7,7 @@ def day_trend_layout():
     first_day = query.first_day()
     last_day = query.last_day()
     return html.Div([
-        dbc.Card("Day Activity", body=True, className="mt-2"),
+        dbc.Card(" Watch Activity For Selected Day By Hour", body=True, className="mt-2"),
         html.Br(),
         dcc.DatePickerSingle(
             id='date_day_trend',
@@ -17,6 +17,7 @@ def day_trend_layout():
             date=last_day
         ),
         html.Br(),
+        html.H6("Filter By:", className="content"),
         dcc.Dropdown(id='dropdown_day_trend',
                 options=["Category", "Type"],
                 value='Category', clearable=False

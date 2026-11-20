@@ -9,6 +9,8 @@ def channel_month_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Most Watched Channels For Each Month", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_channel_month',
             min_date_allowed=first_day,

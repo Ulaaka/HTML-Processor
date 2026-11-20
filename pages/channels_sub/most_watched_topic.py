@@ -9,6 +9,8 @@ def most_watched_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Most Watched Channels During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_most_watched_channels',
             min_date_allowed=first_day,
@@ -17,7 +19,6 @@ def most_watched_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Channels to Show:"),
         dcc.Slider(5, 40, 5, value=20, id='slider_most_watched_channels'),
         html.Br(),
         html.Div([

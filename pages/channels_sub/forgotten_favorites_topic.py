@@ -9,6 +9,8 @@ def forgotten_favorites_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Channels You Used Watch a Lot Before (based on neglect score)", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='date_range_forgotten',
             min_date_allowed=first_day,
@@ -17,7 +19,6 @@ def forgotten_favorites_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.H6("Channels to Show:"),
         dcc.Slider(5, 150, 1, value=20, id='slider_forgotten'),
         html.Br(),
         html.Div([

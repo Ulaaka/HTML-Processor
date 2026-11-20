@@ -8,20 +8,23 @@ def heatmap_layout():
     years = query.all_years()
 
     return html.Div([
-        html.P("Year:"),
+        dbc.Card("Composition of Video Formats Per Month Over the Entire Duration", body=True, className="mt-2"),
+        html.Br(),
+        html.H6("Year:", className="content"),
         dcc.Dropdown(id='dropdown_heatmap_year',
                 options=years,
                 value=max(years), clearable=False
             ),
-        html.P("Month:"),
+        html.H6("Month:", className="content"),
         dcc.Dropdown(id='dropdown_heatmap_month'),
-        html.P("Category:"),
+        html.Br(),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_heatmap_category',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False
         ),
         html.Br(),
-        html.P("Video Type:"),
+        html.H6("Video Type:", className="content"),
         dcc.Dropdown(id='dropdown_heatmap_type',
                 options=['All', 'Video', 'Reel', 'Unavailable'],
                 value='All', clearable=False

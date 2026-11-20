@@ -9,6 +9,8 @@ def time_day_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card(" Watch Activity For Each Hour Given Selected Duration", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='data_range_time_day',
             min_date_allowed=first_day,
@@ -17,13 +19,13 @@ def time_day_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.P("Category:"),
+        html.H6("Category:", className="content"),
         dcc.Dropdown(id='dropdown_time_day_category',
                 options=['All'] + list(category_mapping.values()),
                 value='All', clearable=False
         ),
         html.Br(),
-        html.P("Video Type:"),
+        html.H6("Video Type:", className="content"),
         dcc.Dropdown(id='dropdown_time_day_type',
                 options=['All', 'Video', 'Reel', 'Unavailable'],
                 value='All', clearable=False

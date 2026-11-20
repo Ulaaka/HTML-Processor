@@ -9,6 +9,8 @@ def weekend_weekday_layout():
     last_day = query.last_day()
 
     return html.Div([
+        dbc.Card("Comparison of Weekday and Weekend During Selected Period", body=True, className="mt-2"),
+        html.Br(),
         dcc.DatePickerRange(
             id='date_range_weekend_weekday',
             min_date_allowed=first_day,
@@ -17,7 +19,7 @@ def weekend_weekday_layout():
             end_date=last_day
         ),
         html.Br(),
-        html.P("By which filter:"),
+        html.H6("Filter By:", className="content"),
         dcc.Dropdown(id='dropdown_weekend_weekday',
                 options=['Category', 'Type'],
                 value='Category', clearable=False
