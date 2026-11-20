@@ -70,7 +70,7 @@ Home
 │   ├── Format trend
 │   ├── Heatmap
 │   ├── Interests (categories)
-│   ├── Favourite words
+│   ├── Favorite words
 │   └── Unavailable videos
 ├── Time Patterns
 │   ├── Time of day
@@ -99,6 +99,7 @@ Home
 ├── html_parser.py          # BeautifulSoup parsing + enrichment
 ├── html_processor.py       # Inserts the parsed list into DuckDB
 ├── query_connection.py     # Exposes `query`
+├── load_data.py            # Loads your html
 ├── database/
 │   ├── database_connection_duckdb.py # DuckDB
 │   └── database_connection.py      # MySQL
@@ -193,7 +194,7 @@ db = DatabaseDuck()
 query = QueryProcessorDuck(db)
 ```
 
-Load your history once. Create a small script called `load_data.py` in the project root (it reads `data_folder/watch-history.html`, so make sure that file is in place first):
+Load your history once by running load_data.py with your file name in data_folder (It must exist)
 
 ```python
 import os
@@ -262,7 +263,7 @@ query.insert_history(parser.history_list)
 ## Usage
 
 ```bash
-python load_data.py     # once, or whenever you have a new Takeout export
+python load_data.py     # Run it only once
 python app.py
 ```
 
