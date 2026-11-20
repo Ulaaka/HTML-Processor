@@ -22,7 +22,6 @@ df = (
 )
 
 layout = html.Div([
-    html.H3("Your Watch history"),
     dcc.Input(
         id="search_home",
         type="text",

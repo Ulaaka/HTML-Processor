@@ -740,7 +740,7 @@ class QueryProcessorDuck:
         df = self.con.execute(sql, params).df().rename(columns = {'video_type' : 'Video Type', 'video_type_month_total' : 'Month Total'})
 
         pivoted = pd.pivot_table(df, index='Video Type', columns='Month', values='Month Total').reset_index()
-        return pivoted
+        return pivoted.fillna(0)
 
     def unavailable_videos(self, lower_range=None, upper_range=None):
 

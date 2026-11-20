@@ -19,6 +19,7 @@ TABLE_STYLE = dict(
 
 def table(table_df, url=None, accordion = True, search = None):
     table_df = table_df.copy()
+
     if url is None:
         url = []
 
@@ -26,7 +27,7 @@ def table(table_df, url=None, accordion = True, search = None):
         url = [url]
 
     if search:
-        table_df = table_df[table_df.astype(str).apply(lambda row: row.str.contains(search, case=False)).any(axis=1)]
+        table_df = filter_data(table_df, search)
 
     for c in table_df.columns:
         if pd.api.types.is_datetime64_any_dtype(table_df[c]):
@@ -131,3 +132,8 @@ def streaks_graph(graph_df, x_start, x_end, y_axis, chosen):
 def scatter_graph(graph_df, x_axis, y_axis, size_value, hover_value):
     figure = px.scatter(graph_df, x=x_axis, y=y_axis, size=size_value, hover_name=hover_value, size_max=40)
     return figure
+
+
+def filter_data(table_df, search):
+    return table_df[table_df.astype(str).apply(lambda c: c.str.contains(search, case=False, regex=False)).any(axis=1)]
+
