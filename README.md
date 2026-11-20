@@ -133,7 +133,7 @@ Home
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate 
 
 pip install dash dash-bootstrap-components pandas numpy nltk \
             beautifulsoup4 lxml python-dateutil aiohttp requests \
