@@ -286,3 +286,10 @@ Re-running the loader with the same file is safe. Duplicate `(video_url, time_st
 ## Conclusion
 
 This was a fun project that helped me better understand async requests, scraping HTML files using Beautifulsoup, working with 2 different databases, and, lastly, working with Dash Plotly to build the graphs.
+
+
+Demo video:
+
+
+https://github.com/user-attachments/assets/8a8e0136-1eed-4ebb-9bad-c0299ee02e59
+
